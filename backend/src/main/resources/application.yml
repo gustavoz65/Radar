@@ -2,7 +2,7 @@ spring:
   application:
     name: omnia-platform
   datasource:
-    url: ${OMNIA_DB_URL:jdbc:postgresql://localhost:5432/omnia}
+    url: ${OMNIA_DB_URL:jdbc:postgresql://localhost:5433/omnia}
     username: ${OMNIA_DB_APP_USER:omnia_app}
     password: ${OMNIA_DB_APP_PASSWORD:omnia_app_local_dev}
     hikari:
@@ -11,7 +11,7 @@ spring:
     # Migrações rodam com a role DONA do schema; a aplicação usa omnia_app (ADR-003).
     # URL explícita: o DataSource principal é decorado (TenantAwareDataSource) e não pode
     # ser "derivado" pelo Boot para construir o DataSource do Flyway.
-    url: ${OMNIA_DB_URL:jdbc:postgresql://localhost:5432/omnia}
+    url: ${OMNIA_DB_URL:jdbc:postgresql://localhost:5433/omnia}
     user: ${OMNIA_DB_OWNER_USER:omnia_owner}
     password: ${OMNIA_DB_OWNER_PASSWORD:omnia_local_dev}
   jpa:

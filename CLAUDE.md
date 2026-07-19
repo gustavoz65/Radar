@@ -32,7 +32,7 @@ estudos nem MVP: qualidade de produção, pensado para anos de evolução.
 ## Comandos
 
 ```bash
-make up | down        # infra docker (Postgres 5432, Redis 6379, MailHog 8025)
+make up | down        # infra docker (Postgres 5433, Redis 6379, MailHog 8025)
 make backend-run      # API :8080 (profile local)
 make backend-test     # testes backend (Testcontainers → precisa de Docker)
 make frontend-run     # Angular :4200
