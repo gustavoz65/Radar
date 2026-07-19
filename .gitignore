@@ -1,0 +1,38 @@
+# Node
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.settings/
+.classpath
+.project
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / reports
+coverage/
+.sonar/
+.scannerwork/
+*.log
