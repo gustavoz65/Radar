@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: omnia-platform
+  datasource:
+    url: ${OMNIA_DB_URL:jdbc:postgresql://localhost:5432/omnia}
+    username: ${OMNIA_DB_APP_USER:omnia_app}
+    password: ${OMNIA_DB_APP_PASSWORD:omnia_app_local_dev}
+    hikari:
+      maximum-pool-size: ${OMNIA_DB_POOL_SIZE:10}
+  flyway:
+    # Migrações rodam com a role DONA do schema; a aplicação usa omnia_app (ADR-003).
+    # URL explícita: o DataSource principal é decorado (TenantAwareDataSource) e não pode
+    # ser "derivado" pelo Boot para construir o DataSource do Flyway.
+    url: ${OMNIA_DB_URL:jdbc:postgresql://localhost:5432/omnia}
+    user: ${OMNIA_DB_OWNER_USER:omnia_owner}
+    password: ${OMNIA_DB_OWNER_PASSWORD:omnia_local_dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate # schema é 100% Flyway (ADR-005)
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  data:
+    redis:
+      url: ${OMNIA_REDIS_URL:redis://localhost:6379}
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    # tenant_id/user_id vêm do MDC (TenantContextFilter)
+    level: '%5p [tenant:%X{tenant_id:-}] [user:%X{user_id:-}]'
