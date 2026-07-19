@@ -43,7 +43,7 @@ make frontend-run      # app em :4200
 make test              # suíte completa
 ```
 
-Requisitos: JDK 21+ (funciona com 23; alvo de compilação é 21), Node 20+, Docker, Maven 3.9+.
+Requisitos: JDK 25+ (alvo de compilação é 25), Node 20+, Docker, Maven 3.9+.
 Alternativa sem instalar nada: **Dev Container** (`.devcontainer/`) no VS Code.
 
 ## Qualidade local

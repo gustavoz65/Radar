@@ -1,4 +1,4 @@
-# ADR-001 — Stack: Java 21 + Spring Boot / Angular / PostgreSQL / Redis
+# ADR-001 — Stack: Java 25 LTS + Spring Boot / Angular / PostgreSQL / Redis
 
 - Status: Aceito · Data: 2026-07-19
 
@@ -9,7 +9,7 @@ de contratação fácil e ecossistema maduro para segurança, dados e integraç�
 
 ## Decisão
 
-- **Backend**: Java 21 LTS, Spring Boot 3.5.x (Web, Security, Data JPA/Hibernate, Validation,
+- **Backend**: Java 25 LTS, Spring Boot 3.5.x (Web, Security, Data JPA/Hibernate, Validation,
   Actuator, Cache), Redis, JWT/OAuth2, springdoc-openapi, PostgreSQL, Flyway, MapStruct,
   Lombok (restrito — ver CodingStyle), Maven, Docker.
 - **Testes**: JUnit 5, Mockito, Testcontainers, ArchUnit, Spring Modulith Test.
@@ -19,7 +19,7 @@ de contratação fácil e ecossistema maduro para segurança, dados e integraç�
 
 - Java LTS + Spring: maturidade em segurança/transações/observabilidade, pool de contratação,
   suporte de longo prazo — alinhado a "produto para durar anos".
-- JDK do ambiente é 23; **compilamos com `--release 21`** para garantir alvo LTS.
+- JDK do ambiente é 25; **compilamos com `--release 25`** para garantir alvo LTS.
 - PostgreSQL: RLS nativo (pilar do multi-tenancy), JSONB (personalização), particionamento (escala).
 - Redis: cache, rate limit e locks sem introduzir broker pesado prematuramente.
 - Maven em vez de Gradle: convenção sobre configuração, builds reprodutíveis, menor variância em CI.
