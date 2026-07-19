@@ -1,0 +1,48 @@
+/* Omnia — global styles.
+ * Tailwind: layout/espaçamento. Angular Material M3: componentes.
+ * Cores SEMPRE via tokens/vars de tema (troca por tenant + dark/light) — nunca hex hardcoded. */
+@use '@angular/material' as mat;
+
+@import 'tailwindcss';
+
+html {
+  color-scheme: light dark;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$violet-palette,
+        tertiary: mat.$orange-palette,
+      ),
+      typography: (
+        plain-family: Inter,
+        brand-family: Inter,
+      ),
+      density: 0,
+    )
+  );
+}
+
+/* Identidade por tenant: o ThemeService sobrescreve estes tokens em runtime
+ * a partir das cores configuradas pela empresa (ADR-007). */
+:root {
+  --omnia-brand: var(--mat-sys-primary);
+  --omnia-surface: var(--mat-sys-surface);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font-family: Inter, Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Modo escuro/claro manual (ThemeService alterna a classe no <html>) */
+html.dark {
+  color-scheme: dark;
+}
+html.light {
+  color-scheme: light;
+}
