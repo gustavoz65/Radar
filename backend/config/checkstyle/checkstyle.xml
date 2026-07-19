@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!-- Regras estruturais que o formatador (Spotless) não cobre. Formatação NÃO é verificada aqui. -->
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="error"/>
+
+  <module name="TreeWalker">
+    <!-- Imports -->
+    <module name="AvoidStarImport"/>
+    <module name="RedundantImport"/>
+    <module name="IllegalImport">
+      <!-- shaded/internal APIs e utilitários proibidos -->
+      <property name="illegalPkgs" value="sun, jdk.internal, org.apache.commons.lang"/>
+    </module>
+
+    <!-- Complexidade e tamanho -->
+    <module name="CyclomaticComplexity">
+      <property name="max" value="12"/>
+    </module>
+    <module name="MethodLength">
+      <property name="max" value="80"/>
+    </module>
+    <module name="ParameterNumber">
+      <property name="max" value="7"/>
+    </module>
+    <module name="NestedIfDepth">
+      <property name="max" value="3"/>
+    </module>
+
+    <!-- Boas práticas -->
+    <module name="EqualsHashCode"/>
+    <module name="StringLiteralEquality"/>
+    <module name="DefaultComesLast"/>
+    <module name="FallThrough"/>
+    <module name="OneStatementPerLine"/>
+    <module name="EmptyCatchBlock">
+      <property name="exceptionVariableName" value="ignored"/>
+    </module>
+
+    <!-- Nomenclatura -->
+    <module name="TypeName"/>
+    <!-- Underscore permitido por causa da convenção de testes shouldXxx_whenYyy (CODING-STYLE.md) -->
+    <module name="MethodName">
+      <property name="format" value="^[a-z][a-zA-Z0-9]*(_[a-z][a-zA-Z0-9]*)*$"/>
+    </module>
+    <module name="MemberName"/>
+    <module name="ParameterName"/>
+    <!-- static final pode ser UPPER_SNAKE (constantes) ou lowerCamel (fixtures/regras de teste) -->
+    <module name="ConstantName">
+      <property name="format" value="^([A-Z][A-Z0-9]*(_[A-Z0-9]+)*|[a-z][a-zA-Z0-9]*)$"/>
+    </module>
+    <module name="PackageName">
+      <property name="format" value="^com\.omnia\.platform(\.[a-z][a-z0-9]*)*$"/>
+    </module>
+  </module>
+
+  <module name="LineLength">
+    <property name="max" value="140"/>
+    <property name="ignorePattern" value="^ *\* *[^ ]+$|href|http"/>
+  </module>
+</module>
