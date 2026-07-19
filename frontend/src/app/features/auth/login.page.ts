@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,6 +12,7 @@ import { AuthService } from '../../core/auth/auth.service';
   selector: 'app-login-page',
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -60,6 +61,7 @@ import { AuthService } from '../../core/auth/auth.service';
               }
               Entrar
             </button>
+            <a matButton routerLink="/signup" class="self-center">Criar conta da minha empresa</a>
           </form>
         </mat-card-content>
       </mat-card>
