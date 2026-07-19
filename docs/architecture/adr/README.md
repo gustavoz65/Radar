@@ -5,7 +5,7 @@ Status possíveis: Proposto · Aceito · Substituído por ADR-xxx · Rejeitado.
 
 | #                                    | Título                                                         | Status |
 | ------------------------------------ | -------------------------------------------------------------- | ------ |
-| [001](./ADR-001-stack.md)            | Stack: Java 21 + Spring Boot / Angular / PostgreSQL / Redis    | Aceito |
+| [001](./ADR-001-stack.md)            | Stack: Java 25 + Spring Boot / Angular / PostgreSQL / Redis    | Aceito |
 | [002](./ADR-002-modular-monolith.md) | Monólito modular (Spring Modulith) antes de microservices      | Aceito |
 | [003](./ADR-003-multi-tenancy.md)    | Multi-tenancy pool (shared schema) com RLS                     | Aceito |
 | [004](./ADR-004-hexagonal-ddd.md)    | Hexagonal + DDD pragmático por módulo                          | Aceito |

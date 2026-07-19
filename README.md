@@ -18,7 +18,7 @@
 
 ## Stack
 
-**Backend**: Java 21 · Spring Boot 3.5 (Modulith) · PostgreSQL 16 (RLS multi-tenant) · Redis · Flyway ·
+**Backend**: Java 25 · Spring Boot 3.5 (Modulith) · PostgreSQL 16 (RLS multi-tenant) · Redis · Flyway ·
 JWT/OAuth2 · MapStruct · Testcontainers — [ADR-001](docs/architecture/adr/ADR-001-stack.md)
 
 **Frontend**: Angular (standalone + signals) · Angular Material · TailwindCSS — [ADR-007](docs/architecture/adr/ADR-007-frontend.md)
