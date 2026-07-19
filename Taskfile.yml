@@ -1,0 +1,186 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+  DB_HOST: '{{.APP_DATABASE_HOST | default "localhost"}}'
+  # 5433 no host: máquinas de dev costumam ter um PostgreSQL local ocupando a 5432
+  DB_PORT: '{{.APP_DATABASE_PORT | default "5433"}}'
+  DB_NAME: '{{.APP_DATABASE_DB_NAME | default "omnia"}}'
+  DB_USER: '{{.APP_DATABASE_USER | default "omnia_owner"}}'
+  DB_PASS: '{{.APP_DATABASE_PASSWORD | default "omnia_local_dev"}}'
+  DB_URL: 'jdbc:postgresql://{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}'
+  JDK25: '{{.OMNIA_JDK_HOME | default "C:\\Program Files\\Eclipse Adoptium\\jdk-25.0.3.9-hotspot"}}'
+  MVNW: 'cmd /c .\\mvnw.cmd'
+  FLYWAY_ARGS: '-Dflyway.url={{.DB_URL}} -Dflyway.user={{.DB_USER}} -Dflyway.password={{.DB_PASS}}'
+
+env:
+  # Alvo do projeto é Java 25 (ADR-001); o JAVA_HOME default da máquina aponta para o JDK 23.
+  # Sobrescreva com OMNIA_JDK_HOME no .env se o Temurin estiver em outro caminho.
+  JAVA_HOME: '{{.JDK25}}'
+
+tasks:
+  help:
+    desc: show available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  confirm:
+    desc: confirmation prompt
+    internal: true
+    silent: true
+    cmds:
+      - |
+        echo -n 'Are you sure? [y/N] ' && read ans && [ "${ans:-N}" = y ]
+
+  up:
+    desc: start local infrastructure (Postgres :5433, Redis :6379, MailHog :8025)
+    cmds:
+      - docker compose up -d postgres redis mailhog
+
+  down:
+    desc: stop local infrastructure
+    cmds:
+      - docker compose down
+
+  logs:
+    desc: tail infrastructure logs
+    cmds:
+      - docker compose logs -f
+
+  backend:run:
+    desc: run the backend locally (profile local, http://localhost:8080)
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} spring-boot:run -Dspring-boot.run.profiles=local'
+
+  backend:test:
+    desc: run backend tests and quality gates (needs Docker for Testcontainers)
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} -B verify'
+
+  backend:compile:
+    desc: compile backend sources
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} -B -DskipTests compile'
+
+  backend:format:
+    desc: check backend formatting and style
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} -B spotless:check checkstyle:check'
+
+  frontend:run:
+    desc: run the Angular frontend locally (http://localhost:4200)
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - npm install
+      - npm run start -- --host 0.0.0.0
+
+  frontend:build:
+    desc: build the Angular frontend
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - npm install
+      - npm run build
+
+  frontend:test:
+    desc: run frontend tests (vitest)
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - npm install
+      - npm test -- --watch=false
+
+  test:
+    desc: full test suite (backend + frontend)
+    cmds:
+      - task: backend:test
+      - task: frontend:test
+
+  migrate:status:
+    desc: show Flyway migration info
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} -q flyway:info {{.FLYWAY_ARGS}}'
+
+  migrate:up:
+    desc: apply pending Flyway migrations
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} -q flyway:migrate {{.FLYWAY_ARGS}}'
+
+  migrate:validate:
+    desc: validate applied migrations against local files
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - '{{.MVNW}} -q flyway:validate {{.FLYWAY_ARGS}}'
+
+  migrate:repair:
+    desc: repair Flyway schema history (checksums, failed entries)
+    dir: '{{.BACKEND_DIR}}'
+    deps: [confirm]
+    cmds:
+      - '{{.MVNW}} -q flyway:repair {{.FLYWAY_ARGS}}'
+
+  migrate:clean:
+    desc: 'DROP everything in the local schema and history (dev only!)'
+    dir: '{{.BACKEND_DIR}}'
+    deps: [confirm]
+    cmds:
+      - '{{.MVNW}} -q flyway:clean {{.FLYWAY_ARGS}} -Dflyway.cleanDisabled=false'
+
+  # Sem migrate:down: flyway:undo é recurso pago e a política do projeto é
+  # expand/contract — rollback de schema é uma NOVA migração (DATABASE.md §4).
+
+  migrate:new:
+    desc: 'create the next sequential migration file (task migrate:new name=create_customers)'
+    vars:
+      NAME: '{{.name | default ""}}'
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ]; then
+          echo "Error: name parameter is required"
+          echo "Usage: task migrate:new name=some_change"
+          exit 1
+        fi
+        dir=src/main/resources/db/migration
+        next=$(( $(ls "$dir" | sed -n 's/^V\([0-9]*\)__.*/\1/p' | sort -n | tail -1) + 1 ))
+        file="$dir/V${next}__{{.NAME}}.sql"
+        printf -- "-- V%s__%s\n-- Lembre: tabela de negócio => tenant_id + RLS + índice (tenant_id, ...) — DATABASE.md §3\n" "$next" "{{.NAME}}" > "$file"
+        echo "Created $file"
+
+  db:psql:
+    desc: open psql inside the local Postgres container
+    interactive: true
+    cmds:
+      - docker exec -it omnia-postgres psql -U {{.DB_USER}} -d {{.DB_NAME}}
+
+  format:
+    desc: fix formatting (Java + web/docs)
+    cmds:
+      - cmd /c "cd {{.BACKEND_DIR}} && mvnw.cmd -q spotless:apply"
+      - npx prettier --write .
+
+  check:
+    desc: all local quality gates
+    cmds:
+      - task: backend:format
+      - task: backend:test
+      - npx prettier --check .
+
+  sonar:up:
+    desc: start local SonarQube (http://localhost:9000)
+    cmds:
+      - docker compose --profile quality up -d sonarqube
+
+  tidy:
+    desc: format everything and validate the build compiles
+    cmds:
+      - task: format
+      - task: backend:compile
