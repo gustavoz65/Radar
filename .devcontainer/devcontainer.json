@@ -6,7 +6,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  "forwardPorts": [8080, 4200, 5432, 6379, 8025],
+  "forwardPorts": [8080, 4200, 5433, 6379, 8025],
   "postCreateCommand": "npm install && docker compose up -d postgres redis mailhog",
   "customizations": {
     "vscode": {
