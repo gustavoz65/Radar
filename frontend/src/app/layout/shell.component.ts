@@ -81,5 +81,6 @@ export class ShellComponent {
 
   protected readonly navItems = [
     { route: '/dashboard', icon: 'space_dashboard', label: 'Visão geral' },
+    { route: '/customers', icon: 'group', label: 'Clientes' },
   ];
 }
