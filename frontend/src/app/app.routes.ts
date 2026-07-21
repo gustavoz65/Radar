@@ -30,6 +30,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/customers/customer-list.page').then((m) => m.CustomerListPage),
       },
+      {
+        path: 'catalog',
+        loadComponent: () => import('./features/catalog/catalog.page').then((m) => m.CatalogPage),
+      },
+      {
+        path: 'agenda',
+        loadComponent: () => import('./features/scheduling/agenda.page').then((m) => m.AgendaPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
