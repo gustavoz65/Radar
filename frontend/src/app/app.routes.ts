@@ -57,6 +57,25 @@ export const routes: Routes = [
         loadComponent: () => import('./features/reports/reports.page').then((m) => m.ReportsPage),
       },
       {
+        path: 'funnel',
+        loadComponent: () => import('./features/crm/funnel.page').then((m) => m.FunnelPage),
+      },
+      {
+        path: 'work-orders',
+        loadComponent: () =>
+          import('./features/workorders/workorders.page').then((m) => m.WorkOrdersPage),
+      },
+      {
+        path: 'inventory',
+        loadComponent: () =>
+          import('./features/inventory/inventory.page').then((m) => m.InventoryPage),
+      },
+      {
+        path: 'webhooks',
+        loadComponent: () =>
+          import('./features/integrations/webhooks.page').then((m) => m.WebhooksPage),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings.page').then((m) => m.SettingsPage),

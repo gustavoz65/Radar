@@ -131,11 +131,15 @@ export class ShellComponent {
   protected readonly navItems = [
     { route: '/dashboard', icon: 'space_dashboard', label: 'Visão geral' },
     { route: '/agenda', icon: 'calendar_month', label: 'Agenda' },
-    { route: '/sales', icon: 'point_of_sale', label: 'Vendas' },
-    { route: '/finance', icon: 'payments', label: 'Financeiro' },
-    { route: '/reports', icon: 'insights', label: 'Relatórios' },
     { route: '/customers', icon: 'group', label: 'Clientes' },
+    { route: '/funnel', icon: 'filter_alt', label: 'Funil' },
+    { route: '/sales', icon: 'point_of_sale', label: 'Vendas' },
+    { route: '/work-orders', icon: 'build', label: 'Ordens de serviço' },
+    { route: '/finance', icon: 'payments', label: 'Financeiro' },
     { route: '/catalog', icon: 'sell', label: 'Catálogo' },
+    { route: '/inventory', icon: 'inventory_2', label: 'Estoque' },
+    { route: '/reports', icon: 'insights', label: 'Relatórios' },
+    { route: '/webhooks', icon: 'webhook', label: 'Webhooks' },
   ];
 
   constructor() {
