@@ -24,6 +24,11 @@ export interface Page<T> {
   page: { size: number; number: number; totalElements: number; totalPages: number };
 }
 
+export interface AssistantResult {
+  text: string;
+  aiPowered: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
   private readonly http = inject(HttpClient);
@@ -51,5 +56,17 @@ export class CustomerService {
 
   restore(id: string): Promise<Customer> {
     return firstValueFrom(this.http.post<Customer>(`/api/v1/customers/${id}/restore`, {}));
+  }
+
+  summarize(id: string): Promise<AssistantResult> {
+    return firstValueFrom(
+      this.http.get<AssistantResult>(`/api/v1/assistant/customers/${id}/summary`),
+    );
+  }
+
+  draftMessage(kind: string, customerName: string): Promise<AssistantResult> {
+    return firstValueFrom(
+      this.http.post<AssistantResult>('/api/v1/assistant/draft-message', { kind, customerName }),
+    );
   }
 }

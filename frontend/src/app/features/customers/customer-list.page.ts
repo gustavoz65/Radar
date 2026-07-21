@@ -17,6 +17,7 @@ import { MatTableModule } from '@angular/material/table';
 import { effect } from '@angular/core';
 import { Customer, CustomerInput, CustomerService } from './customer.service';
 import { CustomerFormDialog } from './customer-form.dialog';
+import { AssistantDialog } from './assistant.dialog';
 
 @Component({
   selector: 'app-customer-list-page',
@@ -106,6 +107,10 @@ import { CustomerFormDialog } from './customer-form.dialog';
                 <mat-icon>more_vert</mat-icon>
               </button>
               <mat-menu #rowMenu>
+                <button mat-menu-item (click)="openAssistant(c)">
+                  <mat-icon>auto_awesome</mat-icon>
+                  Assistente IA
+                </button>
                 <button mat-menu-item (click)="openForm(c)">
                   <mat-icon>edit</mat-icon>
                   Editar
@@ -213,6 +218,10 @@ export class CustomerListPage {
     } catch {
       this.snackBar.open('Não foi possível salvar o cliente.', 'Fechar', { duration: 4000 });
     }
+  }
+
+  protected openAssistant(customer: Customer): void {
+    this.dialog.open(AssistantDialog, { data: { customer }, width: '520px' });
   }
 
   protected async archive(customer: Customer): Promise<void> {
