@@ -23,6 +23,10 @@ spring:
   data:
     redis:
       url: ${OMNIA_REDIS_URL:redis://localhost:6379}
+  mail:
+    # Dev: MailHog (make up expõe SMTP em 1025, UI em http://localhost:8025)
+    host: ${OMNIA_MAIL_HOST:localhost}
+    port: ${OMNIA_MAIL_PORT:1025}
   jackson:
     default-property-inclusion: non_null
 

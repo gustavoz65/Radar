@@ -3,6 +3,7 @@ package com.omnia.platform.scheduling.application.usecase;
 import com.omnia.platform.catalog.ServiceCatalog;
 import com.omnia.platform.customer.Customers;
 import com.omnia.platform.identity.Members;
+import com.omnia.platform.scheduling.AppointmentBooked;
 import com.omnia.platform.scheduling.application.port.out.AppointmentRepository;
 import com.omnia.platform.scheduling.domain.model.Appointment;
 import com.omnia.platform.scheduling.domain.model.BookingDetails;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +26,19 @@ public class SchedulingUseCases {
     private final ServiceCatalog serviceCatalog;
     private final Customers customers;
     private final Members members;
+    private final ApplicationEventPublisher events;
 
     public SchedulingUseCases(
-            AppointmentRepository appointments, ServiceCatalog serviceCatalog, Customers customers, Members members) {
+            AppointmentRepository appointments,
+            ServiceCatalog serviceCatalog,
+            Customers customers,
+            Members members,
+            ApplicationEventPublisher events) {
         this.appointments = appointments;
         this.serviceCatalog = serviceCatalog;
         this.customers = customers;
         this.members = members;
+        this.events = events;
     }
 
     @Transactional
@@ -60,7 +68,16 @@ public class SchedulingUseCases {
                 command.startTime(),
                 end,
                 command.notes()));
-        return appointments.save(appointment);
+        Appointment saved = appointments.save(appointment);
+        events.publishEvent(new AppointmentBooked(
+                saved.getTenantId(),
+                saved.getId(),
+                saved.getProfessionalUserId(),
+                saved.getProfessionalName(),
+                saved.getCustomerName(),
+                saved.getServiceName(),
+                saved.getStartTime()));
+        return saved;
     }
 
     @Transactional
