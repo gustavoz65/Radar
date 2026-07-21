@@ -39,6 +39,20 @@ export const routes: Routes = [
         loadComponent: () => import('./features/scheduling/agenda.page').then((m) => m.AgendaPage),
       },
       {
+        path: 'sales',
+        loadComponent: () =>
+          import('./features/sales/sales-list.page').then((m) => m.SalesListPage),
+      },
+      {
+        path: 'sales/:id',
+        loadComponent: () =>
+          import('./features/sales/sale-detail.page').then((m) => m.SaleDetailPage),
+      },
+      {
+        path: 'finance',
+        loadComponent: () => import('./features/finance/finance.page').then((m) => m.FinancePage),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings.page').then((m) => m.SettingsPage),
