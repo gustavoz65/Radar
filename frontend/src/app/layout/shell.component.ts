@@ -133,6 +133,7 @@ export class ShellComponent {
     { route: '/agenda', icon: 'calendar_month', label: 'Agenda' },
     { route: '/sales', icon: 'point_of_sale', label: 'Vendas' },
     { route: '/finance', icon: 'payments', label: 'Financeiro' },
+    { route: '/reports', icon: 'insights', label: 'Relatórios' },
     { route: '/customers', icon: 'group', label: 'Clientes' },
     { route: '/catalog', icon: 'sell', label: 'Catálogo' },
   ];
