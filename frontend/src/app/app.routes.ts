@@ -38,6 +38,11 @@ export const routes: Routes = [
         path: 'agenda',
         loadComponent: () => import('./features/scheduling/agenda.page').then((m) => m.AgendaPage),
       },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./features/settings/settings.page').then((m) => m.SettingsPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

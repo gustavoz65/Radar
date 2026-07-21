@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
@@ -8,10 +10,12 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { AuthService } from '../core/auth/auth.service';
 import { ThemeService } from '../core/theme/theme.service';
+import { NotificationService } from '../core/notifications/notification.service';
+import { SettingsService } from '../core/tenant/settings.service';
 
 /**
- * Shell da aplicação logada: navegação lateral por módulo (itens surgem conforme módulos
- * habilitados do tenant — hoje só o dashboard) + barra superior com tema e sessão.
+ * Shell da aplicação logada: navegação lateral por módulo + barra superior com tema, sino de
+ * notificações e sessão. Carrega as configurações do tenant (aplica a cor da marca) ao entrar.
  */
 @Component({
   selector: 'app-shell',
@@ -19,10 +23,12 @@ import { ThemeService } from '../core/theme/theme.service';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
+    DatePipe,
     MatSidenavModule,
     MatToolbarModule,
     MatListModule,
     MatIconModule,
+    MatBadgeModule,
     MatButtonModule,
     MatMenuModule,
   ],
@@ -50,6 +56,43 @@ import { ThemeService } from '../core/theme/theme.service';
           <span class="flex items-center gap-1">
             <button
               matIconButton
+              aria-label="Notificações"
+              [matMenuTriggerFor]="notifMenu"
+              (menuOpened)="refreshNotifications()"
+            >
+              <mat-icon
+                [matBadge]="notifications.unread()"
+                [matBadgeHidden]="notifications.unread() === 0"
+                matBadgeColor="warn"
+                matBadgeSize="small"
+              >
+                notifications
+              </mat-icon>
+            </button>
+            <mat-menu #notifMenu class="!max-w-sm">
+              @if (notifications.items().length === 0) {
+                <div class="px-4 py-6 text-center text-sm opacity-60">Nenhuma notificação</div>
+              } @else {
+                @for (n of notifications.items(); track n.id) {
+                  <button
+                    mat-menu-item
+                    (click)="notifications.markRead(n.id)"
+                    [class.opacity-60]="n.read"
+                  >
+                    <div class="flex flex-col py-1">
+                      <span class="text-sm font-medium">{{ n.title }}</span>
+                      <span class="text-xs opacity-70">{{ n.body }}</span>
+                      <span class="text-[10px] opacity-50">{{
+                        n.createdAt | date: 'dd/MM HH:mm'
+                      }}</span>
+                    </div>
+                  </button>
+                }
+              }
+            </mat-menu>
+
+            <button
+              matIconButton
               aria-label="Alternar tema"
               (click)="theme.setMode(theme.mode() === 'dark' ? 'light' : 'dark')"
             >
@@ -60,6 +103,10 @@ import { ThemeService } from '../core/theme/theme.service';
               <mat-icon>expand_more</mat-icon>
             </button>
             <mat-menu #userMenu>
+              <a mat-menu-item routerLink="/settings">
+                <mat-icon>settings</mat-icon>
+                Configurações
+              </a>
               <button mat-menu-item (click)="auth.logout()">
                 <mat-icon>logout</mat-icon>
                 Sair
@@ -78,6 +125,8 @@ import { ThemeService } from '../core/theme/theme.service';
 export class ShellComponent {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
+  protected readonly notifications = inject(NotificationService);
+  private readonly settings = inject(SettingsService);
 
   protected readonly navItems = [
     { route: '/dashboard', icon: 'space_dashboard', label: 'Visão geral' },
@@ -85,4 +134,13 @@ export class ShellComponent {
     { route: '/customers', icon: 'group', label: 'Clientes' },
     { route: '/catalog', icon: 'sell', label: 'Catálogo' },
   ];
+
+  constructor() {
+    void this.settings.load().catch(() => undefined);
+    void this.notifications.refresh().catch(() => undefined);
+  }
+
+  protected refreshNotifications(): void {
+    void this.notifications.refresh().catch(() => undefined);
+  }
 }
