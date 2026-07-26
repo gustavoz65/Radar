@@ -56,9 +56,12 @@ dessas funções muda.
 
 ## Comandos
 
-Definidos quando o projeto Next.js for scaffolded (primeira etapa do plano do
-sub-projeto 1). Esperado: `npm run dev`, `npm run build`, `npm run lint`,
-`npm run typecheck`.
+- `npm run dev` — servidor de desenvolvimento em http://localhost:3000
+- `npm run build` — build de produção
+- `npm run lint` — ESLint (next/core-web-vitals + TypeScript)
+- `npm run typecheck` — `tsc --noEmit`
+- `npm test` — testes unitários (Vitest)
+- `npm run format` — Prettier em todo o repositório
 
 ## Layout esperado do frontend
 
