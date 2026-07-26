@@ -5,8 +5,6 @@ export interface Column<T> {
   header: string;
   cell: (row: T) => React.ReactNode;
   align?: 'left' | 'right';
-  /** Columns hidden on mobile still appear in the stacked card as a labelled row. */
-  hideOnMobile?: boolean;
 }
 
 interface DataTableProps<T> {
