@@ -36,3 +36,6 @@ coverage/
 .sonar/
 .scannerwork/
 *.log
+
+# Superpowers brainstorming companion
+.superpowers/
