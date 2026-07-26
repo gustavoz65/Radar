@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import type { NewsCategory, NewsItem } from '@/lib/types';
 import { EmptyState } from '@/components/common/empty-state';
+import { FilterGroup } from '@/components/common/filter-group';
 import { formatDateTime } from '@/lib/format/date';
-import { cn } from '@/lib/utils';
 
 type Filter = 'todas' | NewsCategory;
 
@@ -29,24 +29,14 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-        {filters.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={filter === option.value}
-            onClick={() => setFilter(option.value)}
-            className={cn(
-              'shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors',
-              filter === option.value
-                ? 'bg-surface text-text'
-                : 'text-muted hover:bg-surface/60 hover:text-text',
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      <FilterGroup
+        options={filters}
+        value={filter}
+        onChange={setFilter}
+        label="Filtrar por categoria de notícia"
+        className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+        buttonClassName="shrink-0"
+      />
 
       {visible.length === 0 ? (
         <EmptyState

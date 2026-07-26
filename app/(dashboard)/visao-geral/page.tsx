@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { AllocationChart } from '@/components/charts/allocation-chart';
 import { AreaHistoryChart } from '@/components/charts/area-history-chart';
 import { SectionHeader } from '@/components/common/section-header';
@@ -6,10 +7,14 @@ import { TrendValue } from '@/components/common/trend-value';
 import { AccountsList } from '@/components/overview/accounts-list';
 import { ConfidenceGauge } from '@/components/signal/confidence-gauge';
 import { formatBRL } from '@/lib/format/money';
-import { getAccounts, getPortfolioSummary } from '@/lib/data/services';
+import { getAccounts, getPortfolioSummary, getSignals } from '@/lib/data/services';
 
 export default async function VisaoGeralPage() {
-  const [summary, accounts] = await Promise.all([getPortfolioSummary(), getAccounts()]);
+  const [summary, accounts, signals] = await Promise.all([
+    getPortfolioSummary(),
+    getAccounts(),
+    getSignals(),
+  ]);
   const investedTotal = summary.allocation.reduce((total, slice) => total + slice.value, 0);
 
   return (
@@ -37,13 +42,18 @@ export default async function VisaoGeralPage() {
           </h2>
           <AreaHistoryChart data={summary.history} />
         </div>
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-surface p-5">
+        <Link
+          href="/sinais"
+          className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-surface p-5 transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
           <h2 className="text-sm uppercase tracking-wider text-muted">Score médio da carteira</h2>
           <ConfidenceGauge score={summary.averageScore} size="large" />
           <p className="text-center text-xs leading-relaxed text-muted">
-            Média dos sinais ativos. Não é recomendação de compra.
+            Média de {signals.length} sinais ativos.{' '}
+            <span className="text-accent hover:underline">Veja os fatores de cada um.</span> Não é
+            recomendação de compra.
           </p>
-        </div>
+        </Link>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">

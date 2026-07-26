@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { EquityPosition } from '@/lib/types';
 import { EquitiesTable } from './equities-table';
-import { cn } from '@/lib/utils';
+import { FilterGroup } from '@/components/common/filter-group';
 
 type Kind = 'todos' | 'acao' | 'fii';
 
@@ -22,25 +22,14 @@ export function KindFilter({ positions }: { positions: EquityPosition[] }) {
       {/* Plain button group, not a tab widget: no tabpanel/aria-controls or roving
           tabindex is implemented, so a tablist role would promise more than this
           delivers. aria-pressed + native button semantics keep it honest and
-          keyboard-accessible, and match the Notícias category filter. */}
-      <div role="group" aria-label="Filtrar por tipo de ativo" className="flex gap-1">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={kind === option.value}
-            onClick={() => setKind(option.value)}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm transition-colors',
-              kind === option.value
-                ? 'bg-surface text-text'
-                : 'text-muted hover:bg-surface/60 hover:text-text',
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+          keyboard-accessible. Shares FilterGroup with the Notícias category filter. */}
+      <FilterGroup
+        options={options}
+        value={kind}
+        onChange={setKind}
+        label="Filtrar por tipo de ativo"
+        className="flex gap-1"
+      />
       <EquitiesTable positions={filtered} />
     </div>
   );
