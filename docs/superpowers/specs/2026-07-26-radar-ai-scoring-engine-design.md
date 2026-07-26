@@ -27,7 +27,8 @@ auditável.
 1. Uma **fórmula determinística** calcula o score (0–100) a partir de fatores
    mensuráveis extraídos dos dados reais. A fórmula e os pesos ficam versionados em
    código/config — dado o mesmo input, sempre produz o mesmo score.
-2. Uma camada de **IA (Claude, via Anthropic API)** entra só para:
+2. Uma camada de **IA (NVIDIA Nemotron 3 Ultra 550B-A55B, via `build.nvidia.com`, API
+   compatível com OpenAI)** entra só para:
    - traduzir cada fator calculado num rótulo textual curto do breakdown (ex: "Selic
      em alta há 3 reuniões");
    - ler as notícias relevantes (do sub-projeto 3) e resumir/rotular o contexto
@@ -53,7 +54,7 @@ inicial (a refinar durante a implementação com dados reais):
 
 - Cálculo do score de Renda Fixa a partir dos fatores acima.
 - Geração do breakdown (lista de fatores com direção +/−/neutro) e do texto explicativo
-  via Claude.
+  via NVIDIA Nemotron 3 Ultra.
 - Endpoint/rotina que recalcula os `Signal`s de Renda Fixa a cada sincronização (reusa
   o botão "Atualizar agora" dos sub-projetos 2/3 — o cálculo roda depois que os dados
   novos chegam).
@@ -75,11 +76,15 @@ inicial (a refinar durante a implementação com dados reais):
   sub-projetos 2/3, recalcula os `Signal`s de Renda Fixa e persiste no banco (mesma
   tabela `signal` já modelada conceitualmente no sub-projeto 1, agora populada de
   verdade em vez de fixture).
-- Chamada ao Claude (Anthropic API) isolada numa função própria (`explainSignal(factors, news)`)
-  que recebe só os fatores já calculados e as notícias relevantes — nunca o histórico
-  bruto completo, para manter o prompt pequeno e o resultado focado.
+- Chamada ao Nemotron 3 Ultra (via `build.nvidia.com`) isolada numa função própria
+  (`explainSignal(factors, news)`) que recebe só os fatores já calculados e as
+  notícias relevantes — nunca o histórico bruto completo, para manter o prompt pequeno
+  e o resultado focado.
 - Cache: como o score só muda quando há novo sync, não há necessidade de recalcular a
   todo request — é calculado uma vez por sync e lido do banco pelas telas.
+- Credencial: `NVIDIA_API_KEY` fica só em variável de ambiente server-side (`.env.local`
+  fora do controle de versão em dev; variável de ambiente no provedor de deploy em
+  produção) — nunca em código-fonte, nunca em nenhum arquivo commitado.
 
 ## Tratamento de erro
 
