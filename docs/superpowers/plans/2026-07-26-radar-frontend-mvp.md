@@ -3393,13 +3393,15 @@ export function KindFilter({ positions }: { positions: EquityPosition[] }) {
 
   return (
     <div className="space-y-3">
-      <div role="tablist" aria-label="Filtrar por tipo de ativo" className="flex gap-1">
+      {/* A plain button group, not a tablist: an ARIA tab role without a tabpanel
+          and arrow-key navigation is worse for screen readers than no role at all.
+          Matches the category filter in the Notícias tab. */}
+      <div role="group" aria-label="Filtrar por tipo de ativo" className="flex gap-1">
         {options.map((option) => (
           <button
             key={option.value}
-            role="tab"
             type="button"
-            aria-selected={kind === option.value}
+            aria-pressed={kind === option.value}
             onClick={() => setKind(option.value)}
             className={cn(
               'rounded-md px-3 py-1.5 text-sm transition-colors',
@@ -3467,7 +3469,7 @@ export default async function AcoesPage() {
         />
         <StatCard
           label="Variação do dia"
-          value={formatPercent(dayChange)}
+          value={formatBRL((total * dayChange) / 100)}
           hint={<TrendValue value={dayChange} format="percent" />}
         />
         <StatCard label="DY médio ponderado" value={`${formatPercent(weightedDy, 1)} a.a.`} />
