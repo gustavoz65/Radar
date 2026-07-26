@@ -26,3 +26,7 @@ coverage/
 
 # Superpowers brainstorming companion
 .superpowers/
+
+# Next.js generated types
+next-env.d.ts
+*.tsbuildinfo
