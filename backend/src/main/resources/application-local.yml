@@ -1,9 +1,0 @@
-logging:
-  level:
-    com.omnia.platform: DEBUG
-    org.hibernate.SQL: DEBUG
-
-spring:
-  docker:
-    compose:
-      enabled: false

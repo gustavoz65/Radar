@@ -1,8 +1,8 @@
 {
-  "name": "omnia-platform",
+  "name": "radar",
   "version": "0.1.0",
   "private": true,
-  "description": "Omnia — multi-tenant modular SaaS platform for service businesses. Root package: git hooks and formatting tooling only.",
+  "description": "Radar — personal financial intelligence platform. Root package: git hooks and formatting tooling only.",
   "scripts": {
     "prepare": "husky",
     "format": "prettier --write .",

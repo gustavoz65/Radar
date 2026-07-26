@@ -1,7 +1,4 @@
-backend/target/
-frontend/dist/
-frontend/.angular/
 node_modules/
-*.sql
-*.java
+.next/
+dist/
 CHANGELOG.md

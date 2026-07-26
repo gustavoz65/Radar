@@ -1,52 +1,37 @@
-# Omnia Platform
+# Radar
 
-> Plataforma SaaS multi-tenant e modular de gestão para negócios de serviços — clínicas, barbearias,
-> salões, academias, petshops, oficinas e mais — com módulos configuráveis, personalização por
-> empresa e IA nativa.
+> Plataforma pessoal de inteligência financeira — centraliza dados de Open Finance
+> (via Pierre) e cruza com indicadores econômicos, notícias e histórico de mercado
+> para gerar análises probabilísticas de apoio a decisões de investimento. Nunca
+> recomenda uma compra específica.
 
-**Status: Fase 0 — Fundação.** Ver [Roadmap](docs/product/ROADMAP.md).
+**Status:** especificação concluída, implementação ainda não iniciada. Este
+repositório era antes o Omnia (SaaS multi-tenant); o código antigo foi removido —
+histórico recuperável via `git log` se necessário.
 
 ## Por onde começar
 
-| Quero…                      | Documento                                                                                                                                                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Entender o produto          | [Visão](docs/product/VISION.md) · [Mercado](docs/product/MARKET-RESEARCH.md) · [Módulos](docs/product/MODULES.md) · [IA](docs/product/AI-FEATURES.md)                                                          |
-| Entender a técnica          | [Arquitetura](docs/architecture/ARCHITECTURE.md) · [Domínio](docs/architecture/DOMAIN.md) · [Banco](docs/architecture/DATABASE.md) · [ADRs](docs/architecture/adr/README.md) · [API](docs/architecture/API.md) |
-| Contribuir                  | [CONTRIBUTING.md](CONTRIBUTING.md) · [Estilo de código](docs/guides/CODING-STYLE.md)                                                                                                                           |
-| Operar                      | [Deploy](docs/guides/DEPLOYMENT.md)                                                                                                                                                                            |
-| Contexto para agentes de IA | [CLAUDE.md](CLAUDE.md)                                                                                                                                                                                         |
+| Quero…                           | Documento                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| Entender o produto e as decisões | [docs/superpowers/specs/](docs/superpowers/specs/) — uma spec por sub-projeto |
+| Contribuir                       | [CONTRIBUTING.md](CONTRIBUTING.md)                                            |
+| Contexto para agentes de IA      | [CLAUDE.md](CLAUDE.md)                                                        |
 
-## Stack
+## Sub-projetos
 
-**Backend**: Java 25 · Spring Boot 3.5 (Modulith) · PostgreSQL 16 (RLS multi-tenant) · Redis · Flyway ·
-JWT/OAuth2 · MapStruct · Testcontainers — [ADR-001](docs/architecture/adr/ADR-001-stack.md)
-
-**Frontend**: Angular (standalone + signals) · Angular Material · TailwindCSS — [ADR-007](docs/architecture/adr/ADR-007-frontend.md)
-
-**Arquitetura**: monólito modular hexagonal com DDD, eventos de domínio e multi-tenancy pool com
-Row-Level Security — [ADR-002](docs/architecture/adr/ADR-002-modular-monolith.md) · [ADR-003](docs/architecture/adr/ADR-003-multi-tenancy.md) · [ADR-004](docs/architecture/adr/ADR-004-hexagonal-ddd.md)
+1. [Frontend (Next.js, dados mocados)](docs/superpowers/specs/2026-07-26-radar-frontend-mvp-design.md)
+2. [Integração Open Finance via Pierre](docs/superpowers/specs/2026-07-26-radar-pierre-integration-design.md)
+3. [Ingestão de dados de mercado](docs/superpowers/specs/2026-07-26-radar-market-data-design.md)
+4. [Motor de análise / score de confiança](docs/superpowers/specs/2026-07-26-radar-ai-scoring-engine-design.md)
 
 ## Rodando localmente
 
+Ainda não há código de aplicação neste repositório — a implementação do sub-projeto 1
+(frontend) é o próximo passo. Os hooks de git (formatação/commit lint) já funcionam:
+
 ```bash
-npm install          # instala hooks de git (husky/commitlint/prettier)
-make up              # infra: Postgres + Redis + MailHog
-make backend-run     # API: http://localhost:8080  (Swagger: /swagger-ui.html)
-make frontend-run    # App: http://localhost:4200
-make test            # suíte completa
-make check           # todos os gates de qualidade locais
-```
-
-Sem `make` no Windows? Use `.\scripts\dev.ps1 <alvo>` (mesmos alvos) ou o Dev Container.
-
-## Estrutura do repositório
-
-```
-backend/    Monólito modular Spring Boot (módulos: shared, tenant, identity, customer, …)
-frontend/   Workspace Angular
-docs/       Produto, arquitetura, ADRs e guias
-scripts/    Automação de desenvolvimento
-.github/    CI/CD e templates de PR
+npm install   # instala hooks (husky/commitlint/prettier)
+npm run format
 ```
 
 ## Licença
