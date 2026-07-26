@@ -61,7 +61,12 @@ bancárias/saldo em caixa.
 
 - **Next.js Route Handlers** (`app/api/pierre/*`) como backend-for-frontend: a API key
   da Pierre fica só em variável de ambiente server-side, nunca chega ao client.
-- **Banco de dados: Neon Postgres** (integração nativa via Vercel Marketplace).
+- **Banco de dados: MySQL self-hospedado via Docker Compose** — escolhido no lugar de
+  um serviço gerenciado (Postgres/MySQL na nuvem) porque o usuário já tem domínio de
+  MySQL e quer rodá-lo ele mesmo. Cobre bem o desenvolvimento local. Para produção, se
+  o front-end for publicado (ex.: Vercel), o MySQL precisa estar em algum host acessível
+  pela rede (VPS próprio, por exemplo) — decisão de hospedagem de produção fica para a
+  implementação, não bloqueia este design.
 - **Autenticação:** Auth.js (NextAuth) com credentials provider — único usuário
   permitido definido via variável de ambiente (email/hash de senha). Sessão em cookie
   httpOnly. Sem cadastro de novos usuários, sem recuperação de senha self-service (é

@@ -26,7 +26,7 @@ Fixa/Cripto/Ações e, futuramente, o motor de análise
 - Rotas server-side que buscam cada fonte e normalizam para os contratos internos do
   Radar (mesmos tipos já definidos no sub-projeto 1: `TimeSeriesPoint`, `NewsItem`,
   além de um novo `EconomicIndicator`).
-- Persistência histórica no mesmo Postgres (Neon) do sub-projeto 2 — cada sync grava um
+- Persistência histórica no mesmo MySQL (Docker Compose) do sub-projeto 2 — cada sync grava um
   novo ponto na série, construindo o histórico ao longo do tempo (essas APIs dão o
   presente/recente, não necessariamente anos de histórico gratuito).
 - Conversão USD→BRL para cripto (via endpoint de conversão do próprio CoinGecko, ou

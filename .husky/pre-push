@@ -1,9 +1,0 @@
-# Gates rápidos antes do push (testes completos ficam no CI)
-if git diff --quiet HEAD @{push} -- backend 2>/dev/null; then
-  echo "[pre-push] backend unchanged, skipping spotless"
-else
-  (cd backend && ./mvnw -q spotless:check) || {
-    echo "[pre-push] Formatação Java inválida. Rode: make format"
-    exit 1
-  }
-fi

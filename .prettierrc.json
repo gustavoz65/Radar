@@ -4,8 +4,5 @@
   "trailingComma": "all",
   "semi": true,
   "endOfLine": "lf",
-  "overrides": [
-    { "files": "*.md", "options": { "proseWrap": "preserve" } },
-    { "files": "*.html", "options": { "parser": "angular" } }
-  ]
+  "overrides": [{ "files": "*.md", "options": { "proseWrap": "preserve" } }]
 }

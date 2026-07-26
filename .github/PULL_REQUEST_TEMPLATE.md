@@ -4,7 +4,7 @@
 
 ## Por quê
 
-<!-- Contexto/motivação. Link para issue/requisito (docs/product/MODULES.md) -->
+<!-- Contexto/motivação. Link para a spec relevante em docs/superpowers/specs/ -->
 
 ## Como testar
 
@@ -12,9 +12,6 @@
 
 ## Checklist
 
-- [ ] Testes incluídos (domínio e/ou integração)
-- [ ] Toda query/tabela nova respeita tenant (RLS + índice `(tenant_id, …)`)
-- [ ] Migração Flyway incluída (se schema mudou) e compatível com versão anterior
-- [ ] OpenAPI atualizado (se API mudou)
-- [ ] Documentação/ADR atualizados (se decisão nova)
+- [ ] Testes incluídos (unitários e/ou integração)
+- [ ] Documentação/spec atualizada (se decisão nova)
 - [ ] Commits seguem Conventional Commits
