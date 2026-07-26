@@ -2163,7 +2163,7 @@ git commit -m "feat: add responsive app shell with seven dashboard routes"
   - `<InstitutionBadge institution={Institution} />`
   - `<SectionHeader title={string} description?={string} />`
   - `<EmptyState title={string} description={string} />`
-  - `<DataTable columns={Column<T>[]} rows={T[]} rowKey={(row: T) => string} />` where `Column<T> = { key: string; header: string; cell: (row: T) => ReactNode; align?: 'left' | 'right'; hideOnMobile?: boolean }`
+  - `<DataTable columns={Column<T>[]} rows={T[]} rowKey={(row: T) => string} />` where `Column<T> = { key: string; header: string; cell: (row: T) => ReactNode; align?: 'left' | 'right' }`
   - `<AreaHistoryChart data={TimeSeriesPoint[]} color?={string} />` (client)
   - `<AllocationChart slices={AllocationSlice[]} />` (client)
   - `<BarComparisonChart data={{ label: string; value: number; highlight?: boolean }[]} unit="percent" />` (client)
@@ -2483,8 +2483,6 @@ export interface Column<T> {
   header: string;
   cell: (row: T) => React.ReactNode;
   align?: 'left' | 'right';
-  /** Columns hidden on mobile still appear in the stacked card as a labelled row. */
-  hideOnMobile?: boolean;
 }
 
 interface DataTableProps<T> {
