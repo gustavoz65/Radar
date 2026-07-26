@@ -43,7 +43,7 @@ export default async function CriptoPage() {
           hint={<TrendValue value={percentChange(invested, total)} format="percent" />}
         />
         <StatCard
-          label="Maior alta em 24h"
+          label="Melhor desempenho em 24h"
           value={best.symbol}
           hint={<TrendValue value={best.change24h} format="percent" />}
         />
