@@ -14,12 +14,12 @@ Fixa/Cripto/Ações e, futuramente, o motor de análise
 
 ## Fontes de dados (pesquisadas e validadas)
 
-| Dado                   | Fonte                                                                | Custo/limite                         | Observação                                                                                                                     |
-| ---------------------- | -------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Selic, CDI             | **BCB SGS** — `api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados` | Grátis, sem autenticação             | Série 11 = Selic. Código exato da série de CDI a confirmar na implementação (a documentação lista várias séries relacionadas). |
-| Ações, FIIs, BDRs (B3) | **brapi.dev**                                                        | Grátis com token: 15.000 req/mês     | 4 ativos (PETR4, MGLU3, VALE3, ITUB4) funcionam sem token, para teste                                                          |
-| Criptomoedas           | **CoinGecko API**                                                    | Grátis: 10.000 chamadas/mês, 100/min | Preços cotados em USD — precisa converter para BRL                                                                             |
-| Notícias               | RSS do **InfoMoney** e **Investing.com Brasil**                      | Grátis                               | Sem API key; parse de XML server-side                                                                                          |
+| Dado                   | Fonte                                                                | Custo/limite                         | Observação                                                            |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------- |
+| Selic, CDI             | **BCB SGS** — `api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados` | Grátis, sem autenticação             | Série 11 = Selic (meta definida pelo Copom). Série 12 = CDI.          |
+| Ações, FIIs, BDRs (B3) | **brapi.dev**                                                        | Grátis com token: 15.000 req/mês     | 4 ativos (PETR4, MGLU3, VALE3, ITUB4) funcionam sem token, para teste |
+| Criptomoedas           | **CoinGecko API**                                                    | Grátis: 10.000 chamadas/mês, 100/min | Preços cotados em USD — precisa converter para BRL                    |
+| Notícias               | RSS do **InfoMoney** e **Investing.com Brasil**                      | Grátis                               | Sem API key; parse de XML server-side                                 |
 
 ## Escopo
 
