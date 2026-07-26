@@ -1,64 +1,92 @@
 # CLAUDE.md — Contexto para agentes de IA
 
-Você está no repositório do **Omnia**, uma plataforma SaaS comercial multi-tenant de gestão para
-negócios de serviços (clínicas, barbearias, academias, petshops, oficinas…). Não é projeto de
-estudos nem MVP: qualidade de produção, pensado para anos de evolução.
+Você está no repositório do **Radar** (nome provisório), uma plataforma pessoal de
+inteligência financeira. Ela centraliza os dados de Open Finance do usuário (via Pier,
+que já conecta os bancos dele) e cruza isso com indicadores econômicos, notícias e
+histórico de mercado para gerar **análises probabilísticas** de apoio à decisão de
+investimento — renda fixa, cripto e ações. **O produto nunca recomenda uma compra
+específica**; ele mostra um cenário atual do mercado com um score de confiança
+explicável.
+
+Este repositório era antes o Omnia (SaaS multi-tenant Java/Spring Modulith + Angular).
+Esse produto foi abandonado por completo — se você encontrar vestígios dele
+(`backend/`, `frontend/` antigos, docs em `docs/product/` sobre Omnia), é lixo de
+transição a ser removido, não contexto a seguir.
 
 ## Leia antes de mudar código
 
-1. [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) — mapa da arquitetura
-2. [docs/architecture/DOMAIN.md](docs/architecture/DOMAIN.md) — linguagem ubíqua e agregados (nomes são lei)
-3. [docs/architecture/adr/](docs/architecture/adr/README.md) — decisões formais; não as contrarie sem novo ADR
-4. [docs/guides/CODING-STYLE.md](docs/guides/CODING-STYLE.md) — estilo além do formatador
-5. [docs/product/MODULES.md](docs/product/MODULES.md) — requisitos por módulo
+1. [docs/superpowers/specs/](docs/superpowers/specs/) — specs de design, uma por
+   sub-projeto (veja "Como o projeto está dividido" abaixo). **Fonte de verdade atual.**
+2. Os ADRs e docs de arquitetura antigos (`docs/architecture/`) descrevem o Omnia — não
+   se aplicam ao Radar. Novos ADRs para o Radar, se necessários, vão em
+   `docs/architecture/adr/` seguindo o mesmo formato.
+
+## Como o projeto está dividido
+
+Quatro sub-projetos independentes, cada um com sua própria spec e plano:
+
+1. **Frontend / dashboard** — Next.js, dados mocados. Em andamento.
+2. Integração Open Finance real (Pier). Ainda não iniciado.
+3. Ingestão de dados de mercado (cripto, ações, CDI/Selic, notícias). Ainda não iniciado.
+4. Motor de análise probabilística (IA / score de confiança). Ainda não iniciado.
+
+Enquanto só o item 1 existe, **não invente integrações reais** — toda leitura de dados
+passa pela camada de serviço mocada (`lib/data/services.ts`) descrita na spec do
+frontend. Isso é intencional: quando os itens 2–4 forem construídos, só o interior
+dessas funções muda.
 
 ## Regras inegociáveis
 
-1. **Tenant é fronteira absoluta.** Toda tabela de negócio tem `tenant_id` + RLS + índice
-   `(tenant_id, …)`. Toda query nova respeita o TenantContext. Teste de isolamento para toda feature.
-2. **Fronteiras de módulo**: módulos só se falam por API pública do módulo ou eventos de domínio.
-   Nunca importe `adapter`/repositório de outro módulo. `ApplicationModules.verify()` no CI quebra se violar.
-3. **Camadas**: `adapter → application → domain`. Regra de negócio no domínio; controller fino;
-   `@Transactional` só em application.
-4. **Schema só via Flyway** (nunca `ddl-auto=update`; nunca editar migração aplicada).
-5. **Termos canônicos em inglês** do DOMAIN.md no código/banco (`Customer`, não `Cliente`/`Patient`);
-   terminologia vertical é só camada de UI.
-6. **Dinheiro = `Money` VO / NUMERIC**; tempo = `Instant` UTC; IDs = UUIDv7.
-7. **Conventional Commits** com escopo de módulo; commits pequenos; PR com testes.
-8. **Erros de API**: Problem Details RFC 9457 com `code` estável.
-9. Lombok restrito (ver CodingStyle); records para VO/DTO/eventos.
-10. Toda feature: migração + testes (domínio e integração) + OpenAPI + auditoria se sensível.
+1. **Todo score de confiança precisa de breakdown visível dos fatores + disclaimer.**
+   Nunca uma caixa-preta, nunca uma recomendação direta de compra/venda.
+2. **A cor de assinatura do score (`--signature-gold`) nunca é reaproveitada** para
+   variação de preço (alta/baixa usam `--positive`/`--negative`). São conceitos
+   diferentes e devem ser visualmente distintos.
+3. **Toda tela é responsiva de verdade** — desktop e mobile são adaptações de primeira
+   classe do mesmo layout, revisadas juntas, nunca "desktop primeiro, mobile depois".
+4. **Sem chamada de rede direta em componente.** Toda leitura de dados passa por
+   `lib/data/services.ts` (funções async com a assinatura da futura API real). Nunca
+   importe fixtures diretamente num componente de UI.
+5. **Sem logos oficiais de banco.** Instituições mocadas usam badge com iniciais/cor
+   própria — evita qualquer dependência de asset de marca.
+6. **Dinheiro sempre formatado como BRL**; datas/horas tratadas como `Date`/ISO string
+   nos fixtures (sem fuso a resolver nesta fase — dados são mocados).
+7. **Conventional Commits**; commits pequenos.
+8. Sem autenticação, sem multi-usuário, sem testes e2e nesta fase (specs 2-4 mudam isso).
 
 ## Comandos
 
-```bash
-make up | down        # infra docker (Postgres 5433, Redis 6379, MailHog 8025)
-make backend-run      # API :8080 (profile local)
-make backend-test     # testes backend (Testcontainers → precisa de Docker)
-make frontend-run     # Angular :4200
-make format | check   # corrigir formatação / rodar todos os gates
-```
+Definidos quando o projeto Next.js for scaffolded (primeira etapa do plano do
+sub-projeto 1). Esperado: `npm run dev`, `npm run build`, `npm run lint`,
+`npm run typecheck`.
 
-No Windows sem make: `.\scripts\dev.ps1 <alvo>`.
-
-## Layout do backend (Spring Modulith)
+## Layout esperado do frontend
 
 ```
-backend/src/main/java/com/omnia/platform/
-├── OmniaApplication.java
-├── shared/        # kernel: TenantContext, DomainException, Money, eventos base — sem regra de negócio
-├── tenant/        # tenants, settings, módulos habilitados, personalização
-├── identity/      # usuários, auth JWT, papéis/permissões
-└── <novo módulo>/ # sempre: domain/ application/ adapter/ + package-info.java
+app/                      # Next.js App Router — uma rota por aba
+  (dashboard)/
+    visao-geral/
+    renda-fixa/
+    cripto/
+    acoes/
+    sinais/
+    noticias/
+    ferramentas/
+components/
+  ui/                      # shadcn/ui
+  <feature>/                # componentes específicos de cada aba
+lib/
+  data/
+    fixtures/               # dados mocados
+    services.ts              # getPortfolioSummary(), getSignals(), getNews()...
+  types/                     # Account, Position, Signal, NewsItem...
 ```
 
-Migrações: `backend/src/main/resources/db/migration/V<seq>__<intent>.sql` — toda tabela nova segue a
-receita RLS de [DATABASE.md](docs/architecture/DATABASE.md) §3.
+## Como adicionar uma aba/módulo novo (receita)
 
-## Como adicionar um módulo novo (receita)
-
-1. Requisitos em MODULES.md → agregados em DOMAIN.md → ADR se houver decisão nova.
-2. Pacote `com.omnia.platform.<módulo>` com `package-info.java` (@ApplicationModule).
-3. Domínio puro + testes → casos de uso + ports → adapters (web/persistence) → migração Flyway com RLS.
-4. Eventos de domínio para integração com outros módulos (nunca FK cruzando módulos — use source_type/source_id).
-5. Controller com OpenAPI anotado; permissões `module:action` novas seedadas.
+1. Contrato de dados em `lib/types/` → fixture em `lib/data/fixtures/` → função em
+   `lib/data/services.ts` com latência simulada.
+2. Rota em `app/(dashboard)/<aba>/` com `loading.tsx` real (Suspense).
+3. Componentes em `components/<feature>/` reaproveitando tokens de design (cores,
+   Geist Sans/Mono, gauge dourado só para score de confiança).
+4. Se a aba expõe um `Signal`, o breakdown de fatores + disclaimer é obrigatório.
