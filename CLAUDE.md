@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto para agentes de IA
 
 Você está no repositório do **Radar** (nome provisório), uma plataforma pessoal de
-inteligência financeira. Ela centraliza os dados de Open Finance do usuário (via Pier,
+inteligência financeira. Ela centraliza os dados de Open Finance do usuário (via Pierre,
 que já conecta os bancos dele) e cruza isso com indicadores econômicos, notícias e
 histórico de mercado para gerar **análises probabilísticas** de apoio à decisão de
 investimento — renda fixa, cripto e ações. **O produto nunca recomenda uma compra
@@ -25,15 +25,18 @@ transição a ser removido, não contexto a seguir.
 
 Quatro sub-projetos independentes, cada um com sua própria spec e plano:
 
-1. **Frontend / dashboard** — Next.js, dados mocados. Em andamento.
-2. Integração Open Finance real (Pier). Ainda não iniciado.
+1. **Frontend / dashboard** — Next.js, dados mocados. **Construído** (7 abas, plano em
+   `docs/superpowers/plans/2026-07-26-radar-frontend-mvp.md`).
+2. Integração Open Finance real (Pierre — app da CloudWalk, `docs.pierre.finance`; o
+   nome NÃO é "Pier"). Em andamento.
 3. Ingestão de dados de mercado (cripto, ações, CDI/Selic, notícias). Ainda não iniciado.
 4. Motor de análise probabilística (IA / score de confiança). Ainda não iniciado.
 
-Enquanto só o item 1 existe, **não invente integrações reais** — toda leitura de dados
-passa pela camada de serviço mocada (`lib/data/services.ts`) descrita na spec do
-frontend. Isso é intencional: quando os itens 2–4 forem construídos, só o interior
-dessas funções muda.
+Toda leitura de dados passa por `lib/data/services.ts`. No item 1 essas funções retornam
+fixtures; o item 2 substitui o **interior** delas por banco/Pierre sem que nenhum
+componente de UI mude. Nunca chame a Pierre nem o banco direto de um componente, e nunca
+importe fixture dentro de componente. Enquanto os itens 3–4 não existirem, **não invente
+as integrações deles**.
 
 ## Regras inegociáveis
 
