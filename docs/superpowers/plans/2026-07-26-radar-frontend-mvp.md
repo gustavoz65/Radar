@@ -31,6 +31,7 @@
 - **No direct network calls in components.** All data reads go through `lib/data/services.ts`. Never import a fixture file from a UI component.
 - **No official bank logos.** Institutions render as an initials badge with their own color.
 - **Money always formatted as BRL** via `formatBRL`. Numeric/tabular values use Geist Mono.
+- **Dates only ever formatted by `lib/format/date.ts`**, always in UTC. No component defines its own `Intl.DateTimeFormat` — fixtures carry no real timezone in this phase, so a viewer's offset must never shift a displayed date.
 - **Responsiveness is not a follow-up.** Every screen task ends with both the desktop and mobile layout implemented and checked.
 - **Market anchors for fixtures:** Selic 14,25% a.a., CDI 14,15% a.a. (July 2026).
 - **Conventional Commits**, small commits. Commit at the end of every task.
@@ -68,6 +69,7 @@ lib/
   types/index.ts                    # Account, Position, Signal, NewsItem, ...
   format/money.ts                   # formatBRL, formatCompactBRL
   format/percent.ts                 # percentChange, formatPercent, formatSignedPercent
+  format/date.ts                    # formatDate, formatDateTime, formatChartDate (UTC)
   charts/gauge.ts                   # GAUGE_ARC_LENGTH, gaugeDashOffset, scoreLabel
   data/random.ts                    # mulberry32 seeded PRNG + series generator
   data/fixtures/institutions.ts
@@ -96,6 +98,7 @@ components/
   signal/confidence-gauge.tsx       # THE signature arc gauge (mini | large)
   signal/factor-breakdown.tsx
   signal/signal-disclaimer.tsx
+  signal/asset-class-labels.ts      # shared by signal-card and signal-detail
   signal/signal-card.tsx
   charts/area-history-chart.tsx     # client: Recharts area
   charts/allocation-chart.tsx       # client: Recharts donut
@@ -108,6 +111,7 @@ lib/tools/projection.ts             # future-value math (pure, tested)
 tests/
   format/money.test.ts
   format/percent.test.ts
+  format/date.test.ts
   charts/gauge.test.ts
   tools/projection.test.ts
   data/services.test.ts
@@ -368,8 +372,8 @@ git commit -m "feat: scaffold next.js app with radar design tokens"
 
 **Files:**
 
-- Create: `lib/format/money.ts`, `lib/format/percent.ts`, `lib/charts/gauge.ts`
-- Test: `tests/format/money.test.ts`, `tests/format/percent.test.ts`, `tests/charts/gauge.test.ts`
+- Create: `lib/format/money.ts`, `lib/format/percent.ts`, `lib/format/date.ts`, `lib/charts/gauge.ts`
+- Test: `tests/format/money.test.ts`, `tests/format/percent.test.ts`, `tests/format/date.test.ts`, `tests/charts/gauge.test.ts`
 
 **Interfaces:**
 
@@ -383,6 +387,11 @@ git commit -m "feat: scaffold next.js app with radar design tokens"
   - `GAUGE_ARC_LENGTH: number` — length of the semicircular gauge arc (radius 50).
   - `gaugeDashOffset(score: number): number` — stroke-dashoffset for a score in 0–100, clamped.
   - `scoreLabel(score: number): 'Baixa' | 'Moderada' | 'Alta'` — `< 40` Baixa, `< 70` Moderada, else Alta.
+  - `formatDate(iso: string): string` — `'2028-03-15'` → `'15/03/2028'`.
+  - `formatDateTime(iso: string): string` — `'2026-07-26T09:12:00.000Z'` → `'26/07/2026 09:12'`.
+  - `formatChartDate(iso: string): string` — compact axis label, `'2026-07-26'` → `'26/07'`.
+
+All three date helpers accept a date-only (`'YYYY-MM-DD'`) or a full ISO datetime string, and format in **UTC** — fixtures carry no real timezone in this phase, so rendering must not shift dates by the viewer's offset. These three are the only date formatters in the codebase; no component defines its own.
 
 The gauge is a fixed semicircle: `viewBox="0 0 120 70"`, center `(60, 60)`, radius `50`, path `M 10 60 A 50 50 0 0 1 110 60`. Only the dash offset varies with the score, which is why the math is a pure function.
 
@@ -473,6 +482,47 @@ describe('formatSignedPercent', () => {
 });
 ```
 
+`tests/format/date.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { formatChartDate, formatDate, formatDateTime } from '@/lib/format/date';
+
+describe('formatDate', () => {
+  it('formats a date-only string as dd/MM/yyyy', () => {
+    expect(formatDate('2028-03-15')).toBe('15/03/2028');
+  });
+
+  it('accepts a full ISO datetime', () => {
+    expect(formatDate('2026-07-26T09:12:00.000Z')).toBe('26/07/2026');
+  });
+
+  it('does not shift the day for a late-evening UTC timestamp', () => {
+    expect(formatDate('2026-07-25T22:05:00.000Z')).toBe('25/07/2026');
+  });
+});
+
+describe('formatDateTime', () => {
+  it('formats date and time in UTC', () => {
+    expect(formatDateTime('2026-07-26T09:12:00.000Z')).toBe('26/07/2026 09:12');
+  });
+
+  it('keeps a late-evening UTC time on its own day', () => {
+    expect(formatDateTime('2026-07-25T22:05:00.000Z')).toBe('25/07/2026 22:05');
+  });
+});
+
+describe('formatChartDate', () => {
+  it('formats a compact dd/MM axis label', () => {
+    expect(formatChartDate('2026-07-26')).toBe('26/07');
+  });
+
+  it('accepts a full ISO datetime', () => {
+    expect(formatChartDate('2026-01-05T00:00:00.000Z')).toBe('05/01');
+  });
+});
+```
+
 `tests/charts/gauge.test.ts`:
 
 ```ts
@@ -531,7 +581,7 @@ describe('scoreLabel', () => {
 npm test
 ```
 
-Expected: FAIL — cannot resolve `@/lib/format/money`, `@/lib/format/percent`, `@/lib/charts/gauge`.
+Expected: FAIL — cannot resolve `@/lib/format/money`, `@/lib/format/percent`, `@/lib/format/date`, `@/lib/charts/gauge`.
 
 - [ ] **Step 3: Implement `lib/format/money.ts`**
 
@@ -618,20 +668,68 @@ export function scoreLabel(score: number): 'Baixa' | 'Moderada' | 'Alta' {
 }
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [ ] **Step 6: Implement `lib/format/date.ts`**
+
+```ts
+/**
+ * The only date formatters in the codebase. All format in UTC: fixtures carry
+ * no real timezone in this phase, so a viewer's offset must never shift a date.
+ */
+function toDate(iso: string): Date {
+  return new Date(iso.includes('T') ? iso : `${iso}T00:00:00.000Z`);
+}
+
+const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  timeZone: 'UTC',
+});
+
+const chartDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'UTC',
+});
+
+/** '2028-03-15' -> '15/03/2028' */
+export function formatDate(iso: string): string {
+  return dateFormatter.format(toDate(iso));
+}
+
+/** '2026-07-26T09:12:00.000Z' -> '26/07/2026 09:12' */
+export function formatDateTime(iso: string): string {
+  const date = toDate(iso);
+  return `${dateFormatter.format(date)} ${timeFormatter.format(date)}`;
+}
+
+/** '2026-07-26' -> '26/07' — compact enough for a chart axis. */
+export function formatChartDate(iso: string): string {
+  return chartDateFormatter.format(toDate(iso));
+}
+```
+
+- [ ] **Step 7: Run the tests to verify they pass**
 
 ```bash
 npm test
 npm run typecheck
 ```
 
-Expected: all tests PASS, `tsc` clean.
+Expected: all tests PASS, `tsc` clean. If a date assertion is off by one day, `timeZone: 'UTC'` is missing from a formatter.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add lib/format lib/charts tests/format tests/charts
-git commit -m "feat: add brl formatting, percent helpers and gauge math"
+git commit -m "feat: add brl formatting, percent, date helpers and gauge math"
 ```
 
 ---
@@ -2050,7 +2148,7 @@ git commit -m "feat: add responsive app shell with seven dashboard routes"
 
 **Files:**
 
-- Create: `components/signal/confidence-gauge.tsx`, `components/signal/factor-breakdown.tsx`, `components/signal/signal-disclaimer.tsx`, `components/signal/signal-card.tsx`, `components/common/stat-card.tsx`, `components/common/trend-value.tsx`, `components/common/institution-badge.tsx`, `components/common/section-header.tsx`, `components/common/empty-state.tsx`, `components/common/data-table.tsx`, `components/charts/area-history-chart.tsx`, `components/charts/allocation-chart.tsx`, `components/charts/bar-comparison-chart.tsx`
+- Create: `components/signal/confidence-gauge.tsx`, `components/signal/factor-breakdown.tsx`, `components/signal/signal-disclaimer.tsx`, `components/signal/asset-class-labels.ts`, `components/signal/signal-card.tsx`, `components/common/stat-card.tsx`, `components/common/trend-value.tsx`, `components/common/institution-badge.tsx`, `components/common/section-header.tsx`, `components/common/empty-state.tsx`, `components/common/data-table.tsx`, `components/charts/area-history-chart.tsx`, `components/charts/allocation-chart.tsx`, `components/charts/bar-comparison-chart.tsx`
 
 **Interfaces:**
 
@@ -2200,7 +2298,21 @@ export function SignalDisclaimer({ text }: { text: string }) {
 }
 ```
 
-- [ ] **Step 4: Create `components/signal/signal-card.tsx`**
+- [ ] **Step 4: Create `components/signal/asset-class-labels.ts` and `components/signal/signal-card.tsx`**
+
+`components/signal/asset-class-labels.ts` — shared by the card and, in Task 10, the detail view:
+
+```ts
+import type { AssetClass } from '@/lib/types';
+
+export const assetClassLabels: Record<AssetClass, string> = {
+  rendaFixa: 'Renda fixa',
+  cripto: 'Cripto',
+  acoes: 'Ações e FIIs',
+};
+```
+
+`components/signal/signal-card.tsx`:
 
 ```tsx
 import Link from 'next/link';
@@ -2208,12 +2320,7 @@ import type { Signal } from '@/lib/types';
 import { ConfidenceGauge } from './confidence-gauge';
 import { FactorBreakdown } from './factor-breakdown';
 import { SignalDisclaimer } from './signal-disclaimer';
-
-const assetClassLabels: Record<Signal['assetClass'], string> = {
-  rendaFixa: 'Renda fixa',
-  cripto: 'Cripto',
-  acoes: 'Ações e FIIs',
-};
+import { assetClassLabels } from './asset-class-labels';
 
 /**
  * A Signal is never rendered without its factor breakdown and disclaimer.
@@ -2461,20 +2568,12 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { TimeSeriesPoint } from '@/lib/types';
 import { formatBRL, formatCompactBRL } from '@/lib/format/money';
+import { formatChartDate } from '@/lib/format/date';
 
 interface AreaHistoryChartProps {
   data: TimeSeriesPoint[];
   color?: string;
   height?: number;
-}
-
-function shortDate(iso: string): string {
-  const date = new Date(`${iso}T00:00:00Z`);
-  return new Intl.DateTimeFormat('pt-BR', {
-    month: 'short',
-    day: '2-digit',
-    timeZone: 'UTC',
-  }).format(date);
 }
 
 export function AreaHistoryChart({
@@ -2494,7 +2593,7 @@ export function AreaHistoryChart({
           </defs>
           <XAxis
             dataKey="date"
-            tickFormatter={shortDate}
+            tickFormatter={formatChartDate}
             tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
@@ -2515,7 +2614,7 @@ export function AreaHistoryChart({
               color: 'var(--text)',
               fontSize: 12,
             }}
-            labelFormatter={(label: string) => shortDate(label)}
+            labelFormatter={(label: string) => formatChartDate(label)}
             formatter={(value: number) => [formatBRL(value), 'Valor']}
           />
           <Area
@@ -2725,22 +2824,13 @@ Screen contents per spec: total consolidated net worth, day change, allocation b
 import type { Account } from '@/lib/types';
 import { InstitutionBadge } from '@/components/common/institution-badge';
 import { formatBRL } from '@/lib/format/money';
+import { formatDateTime } from '@/lib/format/date';
 
 const accountTypeLabels: Record<Account['type'], string> = {
   corrente: 'Conta corrente',
   poupanca: 'Poupança',
   investimento: 'Investimentos',
 };
-
-function relativeUpdate(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'UTC',
-  }).format(new Date(iso));
-}
 
 export function AccountsList({ accounts }: { accounts: Account[] }) {
   return (
@@ -2751,7 +2841,7 @@ export function AccountsList({ accounts }: { accounts: Account[] }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-text">{account.institution.name}</p>
             <p className="text-xs text-muted">
-              {accountTypeLabels[account.type]} · atualizado {relativeUpdate(account.lastUpdated)}
+              {accountTypeLabels[account.type]} · atualizado {formatDateTime(account.lastUpdated)}
             </p>
           </div>
           <span className="tabular shrink-0 font-mono text-sm text-text">
@@ -2878,15 +2968,12 @@ import { DataTable, type Column } from '@/components/common/data-table';
 import { TrendValue } from '@/components/common/trend-value';
 import { formatBRL } from '@/lib/format/money';
 import { formatPercent, percentChange } from '@/lib/format/percent';
+import { formatDate } from '@/lib/format/date';
 
 const liquidityLabels: Record<FixedIncomePosition['liquidity'], string> = {
   diaria: 'Diária',
   vencimento: 'No vencimento',
 };
-
-function formatMaturity(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
-}
 
 const columns: Column<FixedIncomePosition>[] = [
   {
@@ -2916,9 +3003,7 @@ const columns: Column<FixedIncomePosition>[] = [
   {
     key: 'maturity',
     header: 'Vencimento',
-    cell: (row) => (
-      <span className="tabular font-mono text-sm">{formatMaturity(row.maturity)}</span>
-    ),
+    cell: (row) => <span className="tabular font-mono text-sm">{formatDate(row.maturity)}</span>,
   },
   {
     key: 'value',
@@ -3491,20 +3576,8 @@ import type { Signal } from '@/lib/types';
 import { ConfidenceGauge } from './confidence-gauge';
 import { FactorBreakdown } from './factor-breakdown';
 import { SignalDisclaimer } from './signal-disclaimer';
-
-const assetClassLabels: Record<Signal['assetClass'], string> = {
-  rendaFixa: 'Renda fixa',
-  cripto: 'Cripto',
-  acoes: 'Ações e FIIs',
-};
-
-function formatUpdatedAt(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(new Date(iso));
-}
+import { assetClassLabels } from './asset-class-labels';
+import { formatDateTime } from '@/lib/format/date';
 
 export function SignalDetail({ signal }: { signal: Signal }) {
   return (
@@ -3519,7 +3592,7 @@ export function SignalDetail({ signal }: { signal: Signal }) {
           <p className="text-xs uppercase tracking-wider text-muted">
             {assetClassLabels[signal.assetClass]}
           </p>
-          <p className="text-xs text-muted">Atualizado em {formatUpdatedAt(signal.updatedAt)}</p>
+          <p className="text-xs text-muted">Atualizado em {formatDateTime(signal.updatedAt)}</p>
         </div>
 
         <div className="space-y-6">
@@ -3620,6 +3693,7 @@ git commit -m "feat: build sinais tab with signal detail route"
 import { useState } from 'react';
 import type { NewsCategory, NewsItem } from '@/lib/types';
 import { EmptyState } from '@/components/common/empty-state';
+import { formatDateTime } from '@/lib/format/date';
 import { cn } from '@/lib/utils';
 
 type Filter = 'todas' | NewsCategory;
@@ -3638,14 +3712,6 @@ const categoryLabels: Record<NewsCategory, string> = {
   acoes: 'Ações',
   bancos: 'Bancos',
 };
-
-function formatPublishedAt(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(new Date(iso));
-}
 
 export function NewsFeed({ items }: { items: NewsItem[] }) {
   const [filter, setFilter] = useState<Filter>('todas');
@@ -3688,7 +3754,7 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
                 <span>{item.source}</span>
                 <span aria-hidden>·</span>
                 <time dateTime={item.publishedAt} className="tabular font-mono">
-                  {formatPublishedAt(item.publishedAt)}
+                  {formatDateTime(item.publishedAt)}
                 </time>
               </div>
               <h2 className="mt-2 text-base leading-snug font-medium text-text">{item.title}</h2>
@@ -4293,35 +4359,36 @@ git commit -m "docs: document radar frontend commands and add 404 page"
 
 ## Spec Coverage Check
 
-| Spec requirement                                                  | Task                             |
-| ----------------------------------------------------------------- | -------------------------------- |
-| Next.js 15 App Router + TS + Tailwind + shadcn/ui                 | 1, 4                             |
-| Geist Sans / Geist Mono                                           | 1                                |
-| Recharts                                                          | 5                                |
-| No global state; Server Components + local `useState`             | 4, 9, 11, 12                     |
-| No auth; app opens straight on the dashboard                      | 1 (`/` → `/visao-geral`)         |
-| App at repository root                                            | 1                                |
-| Mocked service layer with 300–800ms latency                       | 3                                |
-| `lib/data/fixtures/`, `lib/data/services.ts`, `lib/types/` layout | 3                                |
-| Account / Position / Signal / NewsItem contracts                  | 3                                |
-| Four mocked institutions, initials badges, no logos               | 3, 5, 6                          |
-| Simulated history (12 months + daily prices)                      | 3                                |
-| Selic 14,25% / CDI 14,15% anchors                                 | 3, 7, 12                         |
-| Nine design tokens, gold reserved for score                       | 1, 5                             |
-| Arc gauge signature element (mini + large)                        | 2, 5, 10                         |
-| Factor breakdown + disclaimer on every signal                     | 5, 10                            |
-| Desktop top-nav, mobile hamburger                                 | 4                                |
-| Genuine responsiveness on every screen                            | 4, 6, 7, 8, 9, 10, 11, 12, 13    |
-| Tab 1 Visão Geral                                                 | 6                                |
-| Tab 2 Renda Fixa                                                  | 7                                |
-| Tab 3 Cripto                                                      | 8                                |
-| Tab 4 Ações / FIIs                                                | 9                                |
-| Tab 5 Análise e Sinais                                            | 10                               |
-| Tab 6 Notícias                                                    | 11                               |
-| Tab 7 Simulador / Ferramentas                                     | 12                               |
-| Real `loading.tsx` / Suspense skeletons                           | 4, 10, 12                        |
-| Empty states as invitation                                        | 5, 7, 8, 9, 10, 11               |
-| No API error handling this phase                                  | — (deliberate)                   |
-| `tsc` + lint as quality gate                                      | every task                       |
-| Unit tests: BRL formatting, percent change, gauge fill            | 2                                |
-| Omnia legacy deleted                                              | already done in commit `626a87c` |
+| Spec requirement                                                   | Task                             |
+| ------------------------------------------------------------------ | -------------------------------- |
+| Next.js 15 App Router + TS + Tailwind + shadcn/ui                  | 1, 4                             |
+| Geist Sans / Geist Mono                                            | 1                                |
+| Recharts                                                           | 5                                |
+| No global state; Server Components + local `useState`              | 4, 9, 11, 12                     |
+| No auth; app opens straight on the dashboard                       | 1 (`/` → `/visao-geral`)         |
+| App at repository root                                             | 1                                |
+| Mocked service layer with 300–800ms latency                        | 3                                |
+| `lib/data/fixtures/`, `lib/data/services.ts`, `lib/types/` layout  | 3                                |
+| Account / Position / Signal / NewsItem contracts                   | 3                                |
+| Four mocked institutions, initials badges, no logos                | 3, 5, 6                          |
+| Simulated history (12 months + daily prices)                       | 3                                |
+| Selic 14,25% / CDI 14,15% anchors                                  | 3, 7, 12                         |
+| Nine design tokens, gold reserved for score                        | 1, 5                             |
+| Arc gauge signature element (mini + large)                         | 2, 5, 10                         |
+| Factor breakdown + disclaimer on every signal                      | 5, 10                            |
+| Desktop top-nav, mobile hamburger                                  | 4                                |
+| Genuine responsiveness on every screen                             | 4, 6, 7, 8, 9, 10, 11, 12, 13    |
+| Tab 1 Visão Geral                                                  | 6                                |
+| Tab 2 Renda Fixa                                                   | 7                                |
+| Tab 3 Cripto                                                       | 8                                |
+| Tab 4 Ações / FIIs                                                 | 9                                |
+| Tab 5 Análise e Sinais                                             | 10                               |
+| Tab 6 Notícias                                                     | 11                               |
+| Tab 7 Simulador / Ferramentas                                      | 12                               |
+| Real `loading.tsx` / Suspense skeletons                            | 4, 10, 12                        |
+| Empty states as invitation                                         | 5, 7, 8, 9, 10, 11               |
+| No API error handling this phase                                   | — (deliberate)                   |
+| `tsc` + lint as quality gate                                       | every task                       |
+| Unit tests: BRL formatting, percent change, gauge fill             | 2                                |
+| Dates as ISO string in fixtures, no timezone to resolve this phase | 2 (UTC-only formatters), 3       |
+| Omnia legacy deleted                                               | already done in commit `626a87c` |
