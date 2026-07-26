@@ -19,13 +19,16 @@ export function KindFilter({ positions }: { positions: EquityPosition[] }) {
 
   return (
     <div className="space-y-3">
-      <div role="tablist" aria-label="Filtrar por tipo de ativo" className="flex gap-1">
+      {/* Plain button group, not a tab widget: no tabpanel/aria-controls or roving
+          tabindex is implemented, so a tablist role would promise more than this
+          delivers. aria-pressed + native button semantics keep it honest and
+          keyboard-accessible, and match the Notícias category filter. */}
+      <div role="group" aria-label="Filtrar por tipo de ativo" className="flex gap-1">
         {options.map((option) => (
           <button
             key={option.value}
-            role="tab"
             type="button"
-            aria-selected={kind === option.value}
+            aria-pressed={kind === option.value}
             onClick={() => setKind(option.value)}
             className={cn(
               'rounded-md px-3 py-1.5 text-sm transition-colors',

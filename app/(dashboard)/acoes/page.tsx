@@ -44,7 +44,7 @@ export default async function AcoesPage() {
         />
         <StatCard
           label="Variação do dia"
-          value={formatPercent(dayChange)}
+          value={formatBRL((total * dayChange) / 100)}
           hint={<TrendValue value={dayChange} format="percent" />}
         />
         <StatCard label="DY médio ponderado" value={`${formatPercent(weightedDy, 1)} a.a.`} />
