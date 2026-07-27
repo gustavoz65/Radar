@@ -20,7 +20,7 @@ export const bankAccounts = mysqlTable(
     /** Pierre's providerCode, e.g. "NUBANK". */
     providerCode: varchar('provider_code', { length: 64 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
-    type: mysqlEnum('type', ['corrente', 'poupanca', 'investimento']).notNull(),
+    type: mysqlEnum('type', ['corrente', 'poupanca', 'investimento', 'credito']).notNull(),
     balance: decimal('balance', { precision: 15, scale: 2 }).notNull(),
     currencyCode: varchar('currency_code', { length: 8 }).notNull().default('BRL'),
     lastSyncedAt: datetime('last_synced_at').notNull(),

@@ -4,8 +4,17 @@ import type { NewBankAccount, NewBankTransaction } from '@/lib/pierre/mappers';
 
 const FALLBACK_WINDOW_DAYS = 90;
 
+/** Mirrors PierreUpdateStatus from the client, kept structural so tests need no import. */
+export interface RefreshStatus {
+  totalItems: number | null;
+  completed: number | null;
+  inProgress: number | null;
+  needsUserInput: number | null;
+  failed: number | null;
+}
+
 export interface SyncDeps {
-  manualUpdate: () => Promise<{ connectedAccounts: number | null }>;
+  manualUpdate: () => Promise<RefreshStatus>;
   getAccounts: () => Promise<PierreAccount[]>;
   getTransactions: (range: {
     startDate?: string;
@@ -49,9 +58,10 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
   const logId = await deps.startSync();
 
   let accountsWritten = 0;
+  let refresh: RefreshStatus | null = null;
 
   try {
-    await deps.manualUpdate();
+    refresh = await deps.manualUpdate();
 
     const pierreAccounts = await deps.getAccounts();
     const accounts = pierreAccounts.map((account) => mapPierreAccount(account, startedAt));
@@ -85,6 +95,29 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
   }
 
   await deps.snapshotPositions(startedAt);
+
+  // Everything Radar controls worked. Pierre can still have failed to reach a
+  // bank, in which case the balances just written are stale and saying
+  // "success" would hide that.
+  const stale = (refresh?.failed ?? 0) + (refresh?.needsUserInput ?? 0);
+  if (stale > 0) {
+    const parts: string[] = [];
+    if (refresh?.failed) parts.push(`${refresh.failed} com falha`);
+    if (refresh?.needsUserInput) parts.push(`${refresh.needsUserInput} aguardando sua confirmação`);
+    const total = refresh?.totalItems ? ` de ${refresh.totalItems}` : '';
+    const message =
+      `${stale}${total} conexões não atualizaram (${parts.join(', ')}). ` +
+      'Os saldos dessas contas podem estar desatualizados.';
+
+    await deps.finishSync(logId, 'partial', message);
+    return {
+      status: 'partial',
+      accounts: accountsWritten,
+      transactions: transactionsWritten,
+      error: message,
+    };
+  }
+
   await deps.finishSync(logId, 'success', undefined);
 
   return {

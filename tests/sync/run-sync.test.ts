@@ -9,17 +9,25 @@ const NOW = new Date('2026-07-26T12:00:00.000Z');
 // function signature and puts `.mock` out of reach.
 function deps<T extends Partial<SyncDeps>>(overrides = {} as T) {
   return {
-    manualUpdate: vi.fn().mockResolvedValue({ connectedAccounts: 4 }),
+    manualUpdate: vi.fn().mockResolvedValue({
+      totalItems: 4,
+      completed: 4,
+      inProgress: 0,
+      needsUserInput: 0,
+      failed: 0,
+    }),
     getAccounts: vi.fn().mockResolvedValue([
       {
-        accountId: 'acc_1',
-        providerCode: 'NUBANK',
-        accountName: 'Conta',
-        accountType: 'BANK',
-        accountSubtype: 'CHECKING_ACCOUNT',
-        accountBalance: 100,
-        accountCurrencyCode: 'BRL',
-        accountMarketingName: 'Nubank Conta',
+        id: 'acc_1',
+        name: 'Conta',
+        type: 'BANK',
+        subtype: 'CHECKING_ACCOUNT',
+        balance: '100.00',
+        currencyCode: 'BRL',
+        connectorName: 'Nubank',
+        customName: null,
+        marketingName: null,
+        itemIsActive: true,
       },
     ]),
     getTransactions: vi.fn().mockResolvedValue([
@@ -114,6 +122,43 @@ describe('runSync', () => {
     expect(result.accounts).toBe(1);
     expect(result.transactions).toBe(0);
     expect(d.upsertAccounts).toHaveBeenCalledOnce();
+  });
+
+  it('reports partial when Pierre could not refresh some bank connections', async () => {
+    const d = deps({
+      manualUpdate: vi.fn().mockResolvedValue({
+        totalItems: 5,
+        completed: 3,
+        inProgress: 0,
+        needsUserInput: 1,
+        failed: 1,
+      }),
+    });
+
+    const result = await runSync(d);
+
+    // The write path all worked, so the counts still stand — but the balances
+    // for two institutions are stale and the status must not claim success.
+    expect(result.status).toBe('partial');
+    expect(result.accounts).toBe(1);
+    expect(result.transactions).toBe(1);
+    expect(result.error).toContain('não atualizaram');
+    expect(d.snapshotPositions).toHaveBeenCalledOnce();
+  });
+
+  it('still reports success when every connection refreshed cleanly', async () => {
+    const d = deps({
+      manualUpdate: vi
+        .fn()
+        .mockResolvedValue({
+          totalItems: 4,
+          completed: 4,
+          inProgress: 0,
+          needsUserInput: 0,
+          failed: null,
+        }),
+    });
+    await expect(runSync(d)).resolves.toMatchObject({ status: 'success', error: null });
   });
 
   it('never leaks an api key into the recorded error', async () => {

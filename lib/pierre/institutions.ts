@@ -26,9 +26,19 @@ function initialsFor(code: string): string {
   return letters.toUpperCase().padEnd(2, 'X').slice(0, 2);
 }
 
+/**
+ * Pierre identifies the institution by display name (`connectorName`), e.g.
+ * "Banco do Brasil". Folding whitespace to underscores turns that into the
+ * stable code the catalogue is keyed by, so the badge survives Pierre changing
+ * capitalisation or spacing.
+ */
+export function normalizeProviderCode(connectorName: string): string {
+  return connectorName.trim().toUpperCase().replace(/\s+/g, '_');
+}
+
 /** Never throws: an unknown provider still gets a usable badge. */
 export function institutionForProviderCode(code: string): Institution {
-  const normalized = code.trim().toUpperCase();
+  const normalized = normalizeProviderCode(code);
   const match = known[normalized];
   if (match) return match;
 

@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
 /**
- * Thrown when Pierre's response does not match the documented contract.
- * These schemas were transcribed from docs.pierre.finance, never verified
- * against a live call — this error is how a contract drift announces itself.
+ * Thrown when Pierre's response does not match the contract.
+ *
+ * These schemas were originally transcribed from docs.pierre.finance and were
+ * WRONG: the live `get-accounts` uses entirely different field names from the
+ * documented ones (`id` not `accountId`, `connectorName` not `providerCode`, a
+ * string `balance` not a numeric `accountBalance`). They have since been
+ * rewritten against a real response. This error is how the next drift announces
+ * itself instead of silently corrupting the database.
  */
 export class PierreContractError extends Error {
   constructor(
@@ -15,16 +20,30 @@ export class PierreContractError extends Error {
   }
 }
 
-/** Unknown extra fields are allowed everywhere — Pierre may add fields without notice. */
+/**
+ * A live `get-accounts` row. Unknown extra fields are allowed — the real payload
+ * carries a dozen more (itemId, taxNumber, creditData…) that Radar has no use
+ * for, and Pierre may add others without notice.
+ *
+ * `balance` arrives as a decimal STRING here, while `get-balance` sends the same
+ * figure as a number. Both are accepted so a change on either side does not
+ * break the sync.
+ */
 const pierreAccount = z.object({
-  accountId: z.string(),
-  providerCode: z.string(),
-  accountName: z.string(),
-  accountType: z.string(),
-  accountSubtype: z.string().nullish(),
-  accountBalance: z.number(),
-  accountCurrencyCode: z.string().nullish(),
-  accountMarketingName: z.string().nullish(),
+  id: z.string(),
+  name: z.string(),
+  /** 'BANK' | 'CREDIT' | 'INVESTMENT' — open-ended, mapped in mappers.ts. */
+  type: z.string(),
+  /** 'CHECKING_ACCOUNT' | 'SAVINGS' | 'CREDIT_CARD' — note: not 'SAVINGS_ACCOUNT'. */
+  subtype: z.string().nullish(),
+  balance: z.union([z.string(), z.number()]),
+  currencyCode: z.string().nullish(),
+  /** The institution's display name, e.g. 'Banco do Brasil'. Null for Pierre's own wallet. */
+  connectorName: z.string().nullish(),
+  /** User-chosen nickname, when they set one. */
+  customName: z.string().nullish(),
+  marketingName: z.string().nullish(),
+  itemIsActive: z.boolean().nullish(),
 });
 
 export const pierreAccountsResponse = z.object({
@@ -36,6 +55,7 @@ export const pierreAccountsResponse = z.object({
 
 /** get-balance uses snake_case while get-accounts uses camelCase. This is Pierre's, not ours. */
 const pierreBalanceAccount = z.object({
+  id: z.string().nullish(),
   name: z.string(),
   balance: z.number(),
   account_type: z.string(),
@@ -53,9 +73,12 @@ export const pierreBalanceResponse = z.object({
 
 const pierreTransaction = z.object({
   id: z.string(),
+  /** Links the transaction back to a get-accounts row. */
+  account_id: z.string().nullish(),
   description: z.string(),
   category: z.string().nullish(),
   amount: z.number(),
+  /** Full ISO datetime in practice, e.g. '2026-07-26T03:16:36.854Z'. */
   date: z.string(),
   type: z.string().nullish(),
   status: z.string().nullish(),
@@ -68,10 +91,31 @@ export const pierreTransactionsResponse = z.object({
   timestamp: z.string().nullish(),
 });
 
+/** One bucket of the manual-update report, e.g. `failed: { count, items }`. */
+const updateBucket = z
+  .object({ count: z.number().nullish(), items: z.array(z.unknown()).nullish() })
+  .nullish();
+
+/**
+ * manual-update does NOT return `connectedAccounts` as documented. It returns a
+ * per-connection report, which matters: a connection can be failed or awaiting
+ * the user's MFA while the call itself succeeds.
+ */
 export const pierreManualUpdateResponse = z.object({
   success: z.boolean(),
   message: z.string().nullish(),
-  connectedAccounts: z.number().nullish(),
+  details: z
+    .object({
+      totalItems: z.number().nullish(),
+      completed: updateBucket,
+      inProgress: updateBucket,
+      needsUserInput: updateBucket,
+      loginErrors: updateBucket,
+      outdated: updateBucket,
+      partialSuccess: updateBucket,
+      failed: updateBucket,
+    })
+    .nullish(),
   timestamp: z.string().nullish(),
 });
 

@@ -9,6 +9,7 @@ const accountTypeLabels: Record<Account['type'], string> = {
   corrente: 'Conta corrente',
   poupanca: 'Poupança',
   investimento: 'Investimentos',
+  credito: 'Cartão de crédito',
 };
 
 export function AccountsList({ accounts }: { accounts: Account[] }) {

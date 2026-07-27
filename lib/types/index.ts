@@ -13,10 +13,13 @@ export interface Institution {
   color: string; // hex, the badge background
 }
 
+/** `credito` is a credit card: a connected account whose balance is a bill, not an asset. */
+export type AccountType = 'corrente' | 'poupanca' | 'investimento' | 'credito';
+
 export interface Account {
   id: string;
   institution: Institution;
-  type: 'corrente' | 'poupanca' | 'investimento';
+  type: AccountType;
   balance: number;
   lastUpdated: string; // ISO datetime
 }

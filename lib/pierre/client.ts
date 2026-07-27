@@ -99,8 +99,35 @@ export async function getTransactions(range: {
   return parsePierre(pierreTransactionsResponse, payload, 'get-transactions').data;
 }
 
-export async function manualUpdate(): Promise<{ connectedAccounts: number | null }> {
+/** What a refresh actually achieved, per connected institution. */
+export interface PierreUpdateStatus {
+  totalItems: number | null;
+  completed: number | null;
+  inProgress: number | null;
+  /** Connections waiting on the user (MFA, a new password). */
+  needsUserInput: number | null;
+  /** Connections Pierre could not refresh at all. */
+  failed: number | null;
+}
+
+/**
+ * Asks Pierre to pull fresh data from the banks.
+ *
+ * A 200 here does NOT mean every bank answered: the response reports each
+ * connection separately, and one can be failed or awaiting MFA while the call
+ * itself succeeds. The counts are returned so the sync can say so instead of
+ * reporting a clean success over stale data.
+ */
+export async function manualUpdate(): Promise<PierreUpdateStatus> {
   const payload = await request('manual-update', 'POST');
   const parsed = parsePierre(pierreManualUpdateResponse, payload, 'manual-update');
-  return { connectedAccounts: parsed.connectedAccounts ?? null };
+  const details = parsed.details;
+
+  return {
+    totalItems: details?.totalItems ?? null,
+    completed: details?.completed?.count ?? null,
+    inProgress: details?.inProgress?.count ?? null,
+    needsUserInput: details?.needsUserInput?.count ?? null,
+    failed: (details?.failed?.count ?? 0) + (details?.loginErrors?.count ?? 0) || null,
+  };
 }

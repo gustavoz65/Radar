@@ -1,0 +1,1 @@
+ALTER TABLE `bank_account` MODIFY COLUMN `type` enum('corrente','poupanca','investimento','credito') NOT NULL;

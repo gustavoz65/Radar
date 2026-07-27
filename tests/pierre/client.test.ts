@@ -13,14 +13,16 @@ const ACCOUNTS_OK = {
   success: true,
   data: [
     {
-      accountId: 'acc_1',
-      providerCode: 'NUBANK',
-      accountName: 'Conta',
-      accountType: 'BANK',
-      accountSubtype: 'CHECKING_ACCOUNT',
-      accountBalance: 100,
-      accountCurrencyCode: 'BRL',
-      accountMarketingName: 'Nubank Conta',
+      id: 'acc_1',
+      name: 'Conta',
+      type: 'BANK',
+      subtype: 'CHECKING_ACCOUNT',
+      balance: '100.00',
+      currencyCode: 'BRL',
+      connectorName: 'Nubank',
+      customName: null,
+      marketingName: null,
+      itemIsActive: true,
     },
   ],
   count: 1,
@@ -63,7 +65,7 @@ describe('getAccounts', () => {
     fetchMock.mockResolvedValue(jsonResponse(ACCOUNTS_OK));
     const accounts = await getAccounts();
     expect(accounts).toHaveLength(1);
-    expect(accounts[0].accountId).toBe('acc_1');
+    expect(accounts[0].id).toBe('acc_1');
   });
 
   it('throws PierreAuthError on 401', async () => {
@@ -153,19 +155,58 @@ describe('getTransactions', () => {
 });
 
 describe('manualUpdate', () => {
-  it('POSTs and returns the connected account count', async () => {
+  const report = (details: Record<string, unknown>) => ({
+    success: true,
+    message: 'Manual sync initiated',
+    details,
+    timestamp: 'x',
+  });
+
+  it('POSTs and summarises the per-connection report', async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse({
-        success: true,
-        message: 'Manual sync initiated',
-        connectedAccounts: 3,
-        timestamp: 'x',
-      }),
+      jsonResponse(
+        report({
+          totalItems: 5,
+          completed: { count: 0, items: [] },
+          inProgress: { count: 1, items: [] },
+          needsUserInput: { count: 0, items: [] },
+          loginErrors: { count: 0, items: [] },
+          failed: { count: 4, items: [] },
+        }),
+      ),
     );
 
     const result = await manualUpdate();
 
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
-    expect(result.connectedAccounts).toBe(3);
+    expect(result.totalItems).toBe(5);
+    expect(result.inProgress).toBe(1);
+    expect(result.failed).toBe(4);
+  });
+
+  it('counts a login error as a failed connection', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        report({
+          totalItems: 2,
+          failed: { count: 1, items: [] },
+          loginErrors: { count: 1, items: [] },
+        }),
+      ),
+    );
+
+    await expect(manualUpdate()).resolves.toMatchObject({ failed: 2 });
+  });
+
+  it('reports nulls rather than throwing when Pierre omits the details block', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ success: true, message: 'ok', timestamp: 'x' }));
+
+    await expect(manualUpdate()).resolves.toEqual({
+      totalItems: null,
+      completed: null,
+      inProgress: null,
+      needsUserInput: null,
+      failed: null,
+    });
   });
 });
