@@ -2,9 +2,17 @@ import { redirect } from 'next/navigation';
 import { AuthError } from 'next-auth';
 import { auth, signIn } from '@/auth';
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string }>;
+}) {
   const session = await auth();
   if (session) redirect('/visao-geral');
+
+  // The failed-login redirect lands on /login?erro=1; without reading it,
+  // a wrong password looks like nothing happened at all.
+  const { erro } = await searchParams;
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
@@ -15,6 +23,12 @@ export default async function LoginPage() {
         </div>
         <h1 className="mb-1 text-lg font-semibold text-text">Entrar</h1>
         <p className="mb-5 text-sm text-muted">Acesso restrito ao dono da conta.</p>
+
+        {erro ? (
+          <p role="alert" className="mb-4 text-sm text-negative">
+            E-mail ou senha incorretos.
+          </p>
+        ) : null}
 
         <form
           className="space-y-4"
