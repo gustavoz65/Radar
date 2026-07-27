@@ -102,6 +102,23 @@ describe('mapPierreAccount', () => {
     expect(mapped.type).toBe('poupanca');
   });
 
+  it('falls back to accountName when the marketing name is an empty string', () => {
+    const mapped = mapPierreAccount(
+      {
+        accountId: 'acc_4',
+        providerCode: 'SICREDI',
+        accountName: 'Poupança',
+        accountType: 'BANK',
+        accountSubtype: 'SAVINGS_ACCOUNT',
+        accountBalance: 10,
+        accountCurrencyCode: null,
+        accountMarketingName: '',
+      },
+      syncedAt,
+    );
+    expect(mapped.name).toBe('Poupança');
+  });
+
   it('defaults the currency to BRL when Pierre omits it', () => {
     const mapped = mapPierreAccount(
       {
