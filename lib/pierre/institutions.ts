@@ -1,16 +1,12 @@
 import type { Institution } from '@/lib/types';
+import { institutionsByProviderCode } from '@/lib/shared/institutions';
 
 /**
- * Pierre identifies banks by providerCode. These four are the user's connected
- * institutions; the colours match the badges the frontend already used.
- * No official logos — an initials badge is the whole visual identity.
+ * Pierre identifies banks by providerCode. The four connected institutions live
+ * in the shared catalogue (`lib/shared/institutions.ts`) so the fixtures and this
+ * mapper can never drift apart on a colour or a name.
  */
-const known: Record<string, Institution> = {
-  BANCO_DO_BRASIL: { id: 'bb', name: 'Banco do Brasil', initials: 'BB', color: '#f5c518' },
-  NUBANK: { id: 'nubank', name: 'Nubank', initials: 'NU', color: '#820ad1' },
-  SICREDI: { id: 'sicredi', name: 'Sicredi', initials: 'SI', color: '#3fa110' },
-  MERCADO_PAGO: { id: 'mercadopago', name: 'Mercado Pago', initials: 'MP', color: '#00a1e0' },
-};
+const known: Record<string, Institution> = institutionsByProviderCode;
 
 const FALLBACK_COLOR = '#4b5563';
 
