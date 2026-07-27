@@ -489,6 +489,11 @@ import { verifyPassword } from '@/lib/auth/password';
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
+  callbacks: {
+    // Without this, `export { auth as middleware }` runs but gates nothing —
+    // every protected route answers 200 to an anonymous request. Verified.
+    authorized: ({ auth }) => !!auth,
+  },
   providers: [
     Credentials({
       credentials: {
