@@ -5,6 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /*
+   * Elevation — two levels, and `--bg` deliberately plays two roles:
+   *   `--bg`      the page background **and** the recessed well *inside* a card
+   *               (simulator input, signal disclaimer, active mobile menu item).
+   *               A `bg-bg` inside a `bg-surface` is not a bug: it is the step
+   *               down. Do not "fix" it to `bg-surface`.
+   *   `--surface` a card/panel raised above the page.
+   */
   --bg: #0a0e14;
   --surface: #0d1117;
   --border: #21262d;
@@ -14,6 +22,18 @@
   --negative: #f85149;
   --accent: #58a6ff;
   --signature-gold: #f5b942;
+
+  /*
+   * Asset classes — the allocation chart's colours (slice + legend). They name
+   * *what the asset is*, never a direction: `--positive`/`--negative` stay
+   * reserved for price movement and `--signature-gold` for the confidence score.
+   * That is why equities use a teal rather than a green: a legend green sitting
+   * next to a price-up green would read as the same signal. No chart colour ever
+   * lives as raw hex inside a component.
+   */
+  --asset-fixed-income: var(--accent);
+  --asset-crypto: #a371f7;
+  --asset-equity: #2dd4bf;
 
   /*
    * This app is permanently dark — there is no light/dark toggle, in this phase
@@ -70,6 +90,9 @@
   --color-negative: var(--negative);
   --color-accent: var(--accent);
   --color-gold: var(--signature-gold);
+  --color-asset-fixed-income: var(--asset-fixed-income);
+  --color-asset-crypto: var(--asset-crypto);
+  --color-asset-equity: var(--asset-equity);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

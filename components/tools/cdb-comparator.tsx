@@ -5,6 +5,9 @@ import { BarComparisonChart, type ComparisonBar } from '@/components/charts/bar-
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatBRL } from '@/lib/format/money';
+import { PanelTitle, dataLabelClass } from '@/components/common/typography';
+import { surfaceCardClass } from '@/components/common/surface';
+import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/format/percent';
 import { futureValue } from '@/lib/tools/projection';
 
@@ -32,9 +35,9 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
   }));
 
   return (
-    <section className="space-y-5 rounded-lg border border-border bg-surface p-4 sm:p-5">
+    <section className={cn('space-y-5', surfaceCardClass)}>
       <div>
-        <h2 className="text-base font-medium text-text">Comparador CDB × Tesouro × poupança</h2>
+        <PanelTitle>Comparador CDB × Tesouro × poupança</PanelTitle>
         <p className="mt-1 text-sm text-muted">
           Comparação bruta de taxas, sem imposto de renda. Não é recomendação de compra.
         </p>
@@ -42,7 +45,7 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="cdb-amount" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="cdb-amount" className={dataLabelClass}>
             Valor aplicado
           </Label>
           <Input
@@ -56,7 +59,7 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="cdb-months" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="cdb-months" className={dataLabelClass}>
             Prazo (meses)
           </Label>
           <Input
@@ -70,7 +73,7 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="cdb-percent" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="cdb-percent" className={dataLabelClass}>
             % do CDI
           </Label>
           <Input

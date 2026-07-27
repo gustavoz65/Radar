@@ -18,7 +18,9 @@ export function DesktopNav() {
             href={link.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'rounded-md px-3 py-2 text-sm transition-colors',
+              // py-2.5 makes the target ~40px: still comfortable with a mouse and
+              // no longer cramped on a tablet, which also lands on the lg breakpoint.
+              'rounded-md px-3 py-2.5 text-sm transition-colors',
               active ? 'bg-surface text-text' : 'text-muted hover:bg-surface/60 hover:text-text',
             )}
           >

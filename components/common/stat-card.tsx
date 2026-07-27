@@ -1,3 +1,6 @@
+import { DataLabel } from '@/components/common/typography';
+import { surfaceCardClass } from '@/components/common/surface';
+
 export function StatCard({
   label,
   value,
@@ -8,8 +11,8 @@ export function StatCard({
   hint?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <p className="text-xs uppercase tracking-wider text-muted">{label}</p>
+    <div className={surfaceCardClass}>
+      <DataLabel>{label}</DataLabel>
       <p className="tabular mt-2 font-mono text-xl text-text sm:text-2xl">{value}</p>
       {hint ? <div className="mt-1.5 text-sm">{hint}</div> : null}
     </div>

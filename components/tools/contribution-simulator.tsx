@@ -6,6 +6,9 @@ import { StatCard } from '@/components/common/stat-card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatBRL } from '@/lib/format/money';
+import { PanelTitle, dataLabelClass } from '@/components/common/typography';
+import { surfaceCardClass } from '@/components/common/surface';
+import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/format/percent';
 import { futureValue, projectionSeries } from '@/lib/tools/projection';
 
@@ -22,9 +25,9 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
   const series = projectionSeries(options);
 
   return (
-    <section className="space-y-5 rounded-lg border border-border bg-surface p-4 sm:p-5">
+    <section className={cn('space-y-5', surfaceCardClass)}>
       <div>
-        <h2 className="text-base font-medium text-text">Simulador de aporte mensal</h2>
+        <PanelTitle>Simulador de aporte mensal</PanelTitle>
         <p className="mt-1 text-sm text-muted">
           Projeção com taxa constante e aportes no fim de cada mês. Cenário ilustrativo, não é
           recomendação de compra.
@@ -33,7 +36,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-1.5">
-          <Label htmlFor="sim-initial" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="sim-initial" className={dataLabelClass}>
             Valor inicial
           </Label>
           <Input
@@ -47,7 +50,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sim-monthly" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="sim-monthly" className={dataLabelClass}>
             Aporte mensal
           </Label>
           <Input
@@ -61,7 +64,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sim-years" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="sim-years" className={dataLabelClass}>
             Prazo (anos)
           </Label>
           <Input
@@ -75,7 +78,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sim-rate" className="text-xs uppercase tracking-wider text-muted">
+          <Label htmlFor="sim-rate" className={dataLabelClass}>
             Taxa a.a. (%)
           </Label>
           <Input

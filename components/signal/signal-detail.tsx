@@ -5,6 +5,9 @@ import { FactorBreakdown } from './factor-breakdown';
 import { SignalDisclaimer } from './signal-disclaimer';
 import { assetClassLabels } from './asset-class-labels';
 import { formatDateTime } from '@/lib/format/date';
+import { DataLabel } from '@/components/common/typography';
+import { surfaceCardClass } from '@/components/common/surface';
+import { cn } from '@/lib/utils';
 
 export function SignalDetail({ signal }: { signal: Signal }) {
   return (
@@ -13,12 +16,13 @@ export function SignalDetail({ signal }: { signal: Signal }) {
         ← Voltar para os sinais
       </Link>
 
+      {/* The gauge column is a fixed width (px), not fluid (fr) like the overview:
+          here it is an identification panel for the signal, with predictably sized
+          content — not content that gains anything from growing with the screen. */}
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface p-6">
+        <div className={cn('flex flex-col items-center gap-3', surfaceCardClass)}>
           <ConfidenceGauge score={signal.score} size="large" />
-          <p className="text-xs uppercase tracking-wider text-muted">
-            {assetClassLabels[signal.assetClass]}
-          </p>
+          <DataLabel>{assetClassLabels[signal.assetClass]}</DataLabel>
           <p className="text-xs text-muted">Atualizado em {formatDateTime(signal.updatedAt)}</p>
         </div>
 
@@ -28,8 +32,8 @@ export function SignalDetail({ signal }: { signal: Signal }) {
             <p className="leading-relaxed text-muted">{signal.summary}</p>
           </div>
 
-          <div className="rounded-lg border border-border bg-surface p-5">
-            <FactorBreakdown factors={signal.factors} />
+          <div className={surfaceCardClass}>
+            <FactorBreakdown factors={signal.factors} headingLevel="h2" />
           </div>
 
           <SignalDisclaimer text={signal.disclaimer} />
