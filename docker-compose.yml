@@ -8,8 +8,10 @@ services:
       MYSQL_DATABASE: radar
       MYSQL_USER: radar
       MYSQL_PASSWORD: radar
+    # Bind to loopback only: a bare '3306:3306' binds 0.0.0.0, exposing a
+    # database with a well-known password to every network the host joins.
     ports:
-      - '3306:3306'
+      - '127.0.0.1:3306:3306'
     volumes:
       - radar-mysql-data:/var/lib/mysql
     healthcheck:
