@@ -1,5 +1,12 @@
+import 'server-only';
+import { listAccounts } from '@/lib/repositories/accounts';
+import { listPortfolioHistory, listPositions } from '@/lib/repositories/positions';
+import { news } from './fixtures/news';
+import { marketRates } from './fixtures/rates';
+import { signals } from './fixtures/signals';
 import type {
   Account,
+  AllocationSlice,
   CryptoPosition,
   EquityPosition,
   FixedIncomePosition,
@@ -8,67 +15,106 @@ import type {
   PortfolioSummary,
   Signal,
 } from '@/lib/types';
-import { accounts } from './fixtures/accounts';
-import { cryptoPositions } from './fixtures/crypto';
-import { equityPositions } from './fixtures/equities';
-import { fixedIncomePositions } from './fixtures/fixed-income';
-import { news } from './fixtures/news';
-import { portfolioSummary } from './fixtures/portfolio';
-import { marketRates } from './fixtures/rates';
-import { signals } from './fixtures/signals';
 
 /**
- * Mocked backend. Every function has the signature the real API will have, so
- * when specs 2-4 land only the bodies below change — no UI component is touched.
+ * The only module UI components read data from.
  *
- * Latency is skipped under test so the suite stays fast.
+ * Accounts and positions are real (sub-project 2). Signals, news and market
+ * rates are still fixtures — they belong to sub-projects 3 and 4. When those
+ * land, only the bodies below change; no component is touched.
  */
-const MIN_LATENCY_MS = 300;
-const MAX_LATENCY_MS = 800;
-
-async function respond<T>(payload: T): Promise<T> {
-  if (process.env.NODE_ENV !== 'test') {
-    const delay = MIN_LATENCY_MS + Math.random() * (MAX_LATENCY_MS - MIN_LATENCY_MS);
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  }
-  return payload;
-}
-
-export async function getPortfolioSummary(): Promise<PortfolioSummary> {
-  return respond(portfolioSummary);
-}
 
 export async function getAccounts(): Promise<Account[]> {
-  return respond(accounts);
+  return listAccounts();
 }
 
 export async function getFixedIncomePositions(): Promise<FixedIncomePosition[]> {
-  return respond(fixedIncomePositions);
+  const positions = await listPositions();
+  return positions.filter((p): p is FixedIncomePosition => p.assetClass === 'rendaFixa');
 }
 
 export async function getCryptoPositions(): Promise<CryptoPosition[]> {
-  return respond(cryptoPositions);
+  const positions = await listPositions();
+  return positions.filter((p): p is CryptoPosition => p.assetClass === 'cripto');
 }
 
 export async function getEquityPositions(): Promise<EquityPosition[]> {
-  return respond(equityPositions);
+  const positions = await listPositions();
+  return positions.filter((p): p is EquityPosition => p.assetClass === 'acoes');
 }
 
+export async function getPortfolioSummary(): Promise<PortfolioSummary> {
+  const [positions, history] = await Promise.all([listPositions(), listPortfolioHistory()]);
+
+  const sumFor = (assetClass: string) =>
+    Number(
+      positions
+        .filter((position) => position.assetClass === assetClass)
+        .reduce((total, position) => total + position.currentValue, 0)
+        .toFixed(2),
+    );
+
+  const fixedIncome = sumFor('rendaFixa');
+  const crypto = sumFor('cripto');
+  const equities = sumFor('acoes');
+  const totalValue = Number((fixedIncome + crypto + equities).toFixed(2));
+
+  // A brand-new install has no positions. Percent must be 0, never NaN.
+  const percentOf = (value: number) => (totalValue === 0 ? 0 : (value / totalValue) * 100);
+
+  const allocation: AllocationSlice[] = [
+    {
+      assetClass: 'rendaFixa',
+      label: 'Renda fixa',
+      value: fixedIncome,
+      percent: percentOf(fixedIncome),
+    },
+    { assetClass: 'cripto', label: 'Cripto', value: crypto, percent: percentOf(crypto) },
+    { assetClass: 'acoes', label: 'Ações e FIIs', value: equities, percent: percentOf(equities) },
+  ];
+
+  // Day change compares the two most recent snapshots. Fewer than two means no
+  // basis for comparison, so it reports zero rather than inventing a movement.
+  const previous = history.length >= 2 ? history[history.length - 2].value : null;
+  const latest = history.length >= 1 ? history[history.length - 1].value : null;
+  const dayChangeValue =
+    previous !== null && latest !== null ? Number((latest - previous).toFixed(2)) : 0;
+  const dayChangePercent =
+    previous !== null && previous !== 0 ? (dayChangeValue / previous) * 100 : 0;
+
+  const averageScore =
+    signals.length === 0
+      ? 0
+      : Math.round(signals.reduce((sum, signal) => sum + signal.score, 0) / signals.length);
+
+  return {
+    totalValue,
+    dayChangeValue,
+    dayChangePercent,
+    allocation,
+    history,
+    averageScore,
+  };
+}
+
+/** Still mocked — sub-project 4 replaces this body. */
 export async function getSignals(): Promise<Signal[]> {
-  return respond(signals);
+  return signals;
 }
 
+/** Still mocked — sub-project 4 replaces this body. */
 export async function getSignalById(id: string): Promise<Signal | null> {
-  return respond(signals.find((signal) => signal.id === id) ?? null);
+  return signals.find((signal) => signal.id === id) ?? null;
 }
 
+/** Still mocked — sub-project 3 replaces this body. */
 export async function getNews(): Promise<NewsItem[]> {
-  const sorted = [...news].sort(
+  return [...news].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
-  return respond(sorted);
 }
 
+/** Still mocked — sub-project 3 replaces this body. */
 export async function getMarketRates(): Promise<MarketRates> {
-  return respond(marketRates);
+  return marketRates;
 }

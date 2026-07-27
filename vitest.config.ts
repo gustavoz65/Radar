@@ -10,6 +10,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // Several suites are integration tests sharing one MySQL database and each
+    // truncates the tables it uses. Run files one at a time so they cannot wipe
+    // each other's rows mid-assertion.
+    fileParallelism: false,
   },
   resolve: {
     alias: {

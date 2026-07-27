@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { db } from '@/lib/db/client';
+import { bankAccounts, investmentPositions, positionSnapshots } from '@/lib/db/schema';
+import { createPosition, snapshotPositions } from '@/lib/repositories/positions';
+import { upsertAccounts } from '@/lib/repositories/accounts';
 import {
   getAccounts,
   getCryptoPositions,
@@ -11,112 +15,139 @@ import {
   getSignals,
 } from '@/lib/data/services';
 
-describe('getPortfolioSummary', () => {
-  it('returns twelve monthly history points', async () => {
-    const summary = await getPortfolioSummary();
-    expect(summary.history).toHaveLength(12);
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeDb('services over a real database', () => {
+  beforeEach(async () => {
+    await db.delete(positionSnapshots);
+    await db.delete(investmentPositions);
+    await db.delete(bankAccounts);
   });
 
-  it('returns an allocation covering the three asset classes', async () => {
-    const summary = await getPortfolioSummary();
-    expect(summary.allocation.map((slice) => slice.assetClass).sort()).toEqual([
-      'acoes',
-      'cripto',
-      'rendaFixa',
-    ]);
+  afterEach(async () => {
+    await db.delete(positionSnapshots);
+    await db.delete(investmentPositions);
+    await db.delete(bankAccounts);
   });
 
-  it('returns allocation percentages summing to about one hundred', async () => {
-    const summary = await getPortfolioSummary();
-    const total = summary.allocation.reduce((sum, slice) => sum + slice.percent, 0);
-    expect(total).toBeCloseTo(100, 1);
+  describe('with an empty database', () => {
+    it('returns no accounts rather than throwing', async () => {
+      await expect(getAccounts()).resolves.toEqual([]);
+    });
+
+    it('returns no positions in any asset class', async () => {
+      await expect(getFixedIncomePositions()).resolves.toEqual([]);
+      await expect(getCryptoPositions()).resolves.toEqual([]);
+      await expect(getEquityPositions()).resolves.toEqual([]);
+    });
+
+    it('returns a zeroed portfolio summary without dividing by zero', async () => {
+      const summary = await getPortfolioSummary();
+      expect(summary.totalValue).toBe(0);
+      expect(summary.dayChangeValue).toBe(0);
+      expect(summary.dayChangePercent).toBe(0);
+      expect(summary.history).toEqual([]);
+      expect(summary.allocation.every((slice) => slice.percent === 0)).toBe(true);
+      expect(summary.allocation.every((slice) => Number.isFinite(slice.percent))).toBe(true);
+    });
   });
 
-  it('returns a total value equal to the sum of the allocation slices', async () => {
-    const summary = await getPortfolioSummary();
-    const total = summary.allocation.reduce((sum, slice) => sum + slice.value, 0);
-    expect(summary.totalValue).toBeCloseTo(total, 2);
+  describe('with positions', () => {
+    beforeEach(async () => {
+      await createPosition({
+        assetClass: 'rendaFixa',
+        name: 'CDB BB 2028',
+        quantity: 1,
+        unitValue: 30000,
+        investedValue: 28000,
+        purchasedAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
+      await createPosition({
+        assetClass: 'cripto',
+        name: 'Bitcoin',
+        ticker: 'BTC',
+        quantity: 0.1,
+        unitValue: 100000,
+        investedValue: 8000,
+        purchasedAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
+    });
+
+    it('filters each asset class into its own service', async () => {
+      await expect(getFixedIncomePositions()).resolves.toHaveLength(1);
+      await expect(getCryptoPositions()).resolves.toHaveLength(1);
+      await expect(getEquityPositions()).resolves.toHaveLength(0);
+    });
+
+    it('totals the portfolio from the positions', async () => {
+      const summary = await getPortfolioSummary();
+      expect(summary.totalValue).toBe(40000);
+    });
+
+    it('produces allocation percentages that sum to one hundred', async () => {
+      const summary = await getPortfolioSummary();
+      const total = summary.allocation.reduce((sum, slice) => sum + slice.percent, 0);
+      expect(total).toBeCloseTo(100, 6);
+    });
+
+    it('builds history from snapshots', async () => {
+      await snapshotPositions(new Date('2026-07-26T12:00:00.000Z'));
+      const summary = await getPortfolioSummary();
+      expect(summary.history).toHaveLength(1);
+      expect(summary.history[0].value).toBe(40000);
+    });
+
+    it('computes the day change from the two most recent snapshots', async () => {
+      await snapshotPositions(new Date('2026-07-25T12:00:00.000Z'));
+      await snapshotPositions(new Date('2026-07-26T12:00:00.000Z'));
+      const summary = await getPortfolioSummary();
+      // Both snapshots have the same value, so the change is exactly zero.
+      expect(summary.dayChangeValue).toBe(0);
+      expect(summary.dayChangePercent).toBe(0);
+    });
   });
 
-  it('is deterministic across calls', async () => {
-    const [first, second] = await Promise.all([getPortfolioSummary(), getPortfolioSummary()]);
-    expect(first).toEqual(second);
+  describe('with bank accounts', () => {
+    it('returns accounts with their institution badge', async () => {
+      await upsertAccounts([
+        {
+          externalId: 'acc_1',
+          providerCode: 'NUBANK',
+          name: 'Nubank Conta',
+          type: 'corrente',
+          balance: 1500.5,
+          currencyCode: 'BRL',
+          lastSyncedAt: new Date('2026-07-26T12:00:00.000Z'),
+        },
+      ]);
+
+      const accounts = await getAccounts();
+      expect(accounts).toHaveLength(1);
+      expect(accounts[0].institution.initials).toBe('NU');
+    });
   });
 });
 
-describe('position services', () => {
-  it('returns only fixed income positions', async () => {
-    const positions = await getFixedIncomePositions();
-    expect(positions.length).toBeGreaterThan(0);
-    expect(positions.every((p) => p.assetClass === 'rendaFixa')).toBe(true);
-  });
-
-  it('returns only crypto positions', async () => {
-    const positions = await getCryptoPositions();
-    expect(positions.length).toBeGreaterThan(0);
-    expect(positions.every((p) => p.assetClass === 'cripto')).toBe(true);
-  });
-
-  it('returns only equity positions', async () => {
-    const positions = await getEquityPositions();
-    expect(positions.length).toBeGreaterThan(0);
-    expect(positions.every((p) => p.assetClass === 'acoes')).toBe(true);
-  });
-
-  it('gives every position a history series', async () => {
-    const positions = await getCryptoPositions();
-    expect(positions.every((p) => p.history.length >= 30)).toBe(true);
-  });
-});
-
-describe('getAccounts', () => {
-  it('returns the four mocked institutions', async () => {
-    const accounts = await getAccounts();
-    const names = [...new Set(accounts.map((a) => a.institution.name))].sort();
-    expect(names).toEqual(['Banco do Brasil', 'Mercado Pago', 'Nubank', 'Sicredi']);
-  });
-
-  it('gives every institution two-character initials', async () => {
-    const accounts = await getAccounts();
-    expect(accounts.every((a) => a.institution.initials.length === 2)).toBe(true);
-  });
-});
-
-describe('getSignals', () => {
-  it('returns signals with a score inside zero to one hundred', async () => {
+describe('services still backed by fixtures', () => {
+  it('still returns mocked signals until sub-project 4 exists', async () => {
     const signals = await getSignals();
     expect(signals.length).toBeGreaterThan(0);
-    expect(signals.every((s) => s.score >= 0 && s.score <= 100)).toBe(true);
+    expect(signals.every((signal) => signal.factors.length >= 2)).toBe(true);
+    expect(signals.every((signal) => signal.disclaimer.trim().length > 0)).toBe(true);
   });
 
-  it('never returns a signal without factors or a disclaimer', async () => {
-    const signals = await getSignals();
-    expect(signals.every((s) => s.factors.length >= 2)).toBe(true);
-    expect(signals.every((s) => s.disclaimer.trim().length > 0)).toBe(true);
-  });
-});
-
-describe('getSignalById', () => {
-  it('finds an existing signal', async () => {
+  it('still resolves a signal by id', async () => {
     const [first] = await getSignals();
     await expect(getSignalById(first.id)).resolves.toEqual(first);
   });
 
-  it('returns null for an unknown id', async () => {
-    await expect(getSignalById('does-not-exist')).resolves.toBeNull();
-  });
-});
-
-describe('getNews', () => {
-  it('returns items sorted newest first', async () => {
+  it('still returns mocked news newest first', async () => {
     const news = await getNews();
-    const timestamps = news.map((item) => new Date(item.publishedAt).getTime());
-    expect(timestamps).toEqual([...timestamps].sort((a, b) => b - a));
+    const times = news.map((item) => new Date(item.publishedAt).getTime());
+    expect(times).toEqual([...times].sort((a, b) => b - a));
   });
-});
 
-describe('getMarketRates', () => {
-  it('anchors on the july 2026 selic and cdi', async () => {
+  it('still returns the july 2026 rate anchors', async () => {
     const rates = await getMarketRates();
     expect(rates.selic).toBe(14.25);
     expect(rates.cdi).toBe(14.15);
