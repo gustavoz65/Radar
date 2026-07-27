@@ -1485,6 +1485,7 @@ import {
   type PierreAccount,
   type PierreBalance,
   type PierreTransaction,
+  PierreContractError,
   parsePierre,
   pierreAccountsResponse,
   pierreBalanceResponse,
@@ -1547,7 +1548,14 @@ async function request(path: string, method: 'GET' | 'POST'): Promise<unknown> {
   if (response.status === 401 || response.status === 403) throw new PierreAuthError();
   if (!response.ok) throw new PierreHttpError(response.status);
 
-  return response.json();
+  // A 2xx whose body will not parse is still Pierre answering wrongly. Keep it
+  // inside the taxonomy — the sync orchestrator routes on these classes, and a
+  // raw SyntaxError escaping here would bypass that routing entirely.
+  try {
+    return await response.json();
+  } catch {
+    throw new PierreContractError(path, 'a resposta não é JSON válido');
+  }
 }
 
 export async function getAccounts(): Promise<PierreAccount[]> {
