@@ -1,15 +1,14 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { verifyPassword } from '@/lib/auth/password';
+import { authConfig } from '@/auth.config';
 
+// Node-only half: spreads the shared Edge-safe config and adds the Credentials
+// provider, which needs bcrypt (via `verifyPassword`). Only imported by the
+// route handler (`app/api/auth/[...nextauth]/route.ts`), which runs on the
+// Node.js runtime — never by `middleware.ts`. See `auth.config.ts`.
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: 'jwt' },
-  pages: { signIn: '/login' },
-  callbacks: {
-    // Invoked by middleware: without this, `auth as middleware` never redirects
-    // unauthenticated requests — it only attaches the session, it doesn't gate.
-    authorized: ({ auth: session }) => !!session,
-  },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -24,9 +23,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const passwordHash = process.env.AUTH_USER_PASSWORD_HASH;
         if (!allowedEmail || !passwordHash) return null;
 
-        // Single-user app: the email must match exactly and the password must verify.
-        if (email.toLowerCase() !== allowedEmail.toLowerCase()) return null;
-        if (!(await verifyPassword(password, passwordHash))) return null;
+        // Run both checks unconditionally, regardless of whether the email matches,
+        // so a wrong-email attempt takes the same time as a wrong-password attempt.
+        // Short-circuiting on the email check would leak, via response timing,
+        // whether AUTH_USER_EMAIL matches the attempted address (a timing oracle).
+        const emailMatches = email.toLowerCase() === allowedEmail.toLowerCase();
+        const passwordMatches = await verifyPassword(password, passwordHash);
+        if (!emailMatches || !passwordMatches) return null;
 
         return { id: 'radar-user', email: allowedEmail, name: 'Radar' };
       },
