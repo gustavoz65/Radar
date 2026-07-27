@@ -1,5 +1,6 @@
 import type { SignalFactor } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { SubsectionTitle } from '@/components/common/typography';
 
 const directionStyles: Record<
   SignalFactor['direction'],
@@ -10,10 +11,23 @@ const directionStyles: Record<
   neutral: { bar: 'bg-muted', sign: '=', label: 'fator neutro' },
 };
 
-export function FactorBreakdown({ factors }: { factors: SignalFactor[] }) {
+/**
+ * `headingLevel` exists so the breakdown never skips a heading level: inside
+ * SignalCard it sits under the signal title (h2), while on the detail screen the
+ * signal title is the page's h1 and the breakdown is its first subsection.
+ */
+export function FactorBreakdown({
+  factors,
+  headingLevel = 'h3',
+}: {
+  factors: SignalFactor[];
+  headingLevel?: 'h2' | 'h3';
+}) {
   return (
     <div>
-      <h3 className="mb-3 text-xs uppercase tracking-wider text-muted">Fatores do score</h3>
+      <SubsectionTitle as={headingLevel} className="mb-3 block">
+        Fatores do score
+      </SubsectionTitle>
       <ul className="space-y-2.5">
         {factors.map((factor) => {
           const style = directionStyles[factor.direction];

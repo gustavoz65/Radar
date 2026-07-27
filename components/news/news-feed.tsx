@@ -5,6 +5,8 @@ import type { NewsCategory, NewsItem } from '@/lib/types';
 import { EmptyState } from '@/components/common/empty-state';
 import { FilterGroup } from '@/components/common/filter-group';
 import { formatDateTime } from '@/lib/format/date';
+import { PanelTitle } from '@/components/common/typography';
+import { surfaceCardClass } from '@/components/common/surface';
 
 type Filter = 'todas' | NewsCategory;
 
@@ -46,7 +48,7 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
       ) : (
         <ul className="space-y-3">
           {visible.map((item) => (
-            <li key={item.id} className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+            <li key={item.id} className={surfaceCardClass}>
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                 <span className="rounded border border-border px-2 py-0.5 uppercase tracking-wider">
                   {categoryLabels[item.category]}
@@ -57,7 +59,7 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
                   {formatDateTime(item.publishedAt)}
                 </time>
               </div>
-              <h2 className="mt-2 text-base leading-snug font-medium text-text">{item.title}</h2>
+              <PanelTitle className="mt-2">{item.title}</PanelTitle>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.summary}</p>
             </li>
           ))}

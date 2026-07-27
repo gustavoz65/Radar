@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { dataLabelClass } from '@/components/common/typography';
+import { surfaceCardClass, surfaceClass } from '@/components/common/surface';
 
 export interface Column<T> {
   key: string;
@@ -19,7 +21,7 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
   return (
     <>
       {/* Desktop: real table */}
-      <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
+      <div className={cn('hidden overflow-x-auto md:block', surfaceClass)}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
@@ -28,7 +30,8 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted',
+                    'px-4 py-3',
+                    dataLabelClass,
                     column.align === 'right' ? 'text-right' : 'text-left',
                   )}
                 >
@@ -60,12 +63,12 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
       {/* Mobile: stacked cards */}
       <ul className="space-y-3 md:hidden">
         {rows.map((row) => (
-          <li key={rowKey(row)} className="rounded-lg border border-border bg-surface p-4">
+          <li key={rowKey(row)} className={surfaceCardClass}>
             <div className="mb-3 text-text">{primary.cell(row)}</div>
             <dl className="space-y-1.5">
               {rest.map((column) => (
                 <div key={column.key} className="flex items-baseline justify-between gap-3">
-                  <dt className="text-xs uppercase tracking-wider text-muted">{column.header}</dt>
+                  <dt className={dataLabelClass}>{column.header}</dt>
                   <dd className="text-sm text-text">{column.cell(row)}</dd>
                 </div>
               ))}
