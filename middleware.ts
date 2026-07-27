@@ -8,6 +8,10 @@ import { authConfig } from '@/auth.config';
 export const { auth: middleware } = NextAuth(authConfig);
 
 export const config = {
-  // Everything except Next internals, static assets and the auth endpoints.
-  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico|login).*)'],
+  // Pages only. `/api` is excluded on purpose: the middleware's job is to send a
+  // browser to /login, and a 307 to an HTML page is the wrong answer to a fetch —
+  // the client follows it, gets 200 with the login markup, and a caller checking
+  // `response.ok` concludes the write succeeded. Every route handler under /api
+  // calls `auth()` itself and answers 401 in JSON, which is what a fetch can act on.
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login).*)'],
 };

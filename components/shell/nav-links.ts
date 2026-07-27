@@ -8,6 +8,7 @@ export const navLinks: NavLink[] = [
   { href: '/renda-fixa', label: 'Renda fixa' },
   { href: '/cripto', label: 'Cripto' },
   { href: '/acoes', label: 'Ações' },
+  { href: '/posicoes', label: 'Posições' },
   { href: '/sinais', label: 'Análise e sinais' },
   { href: '/noticias', label: 'Notícias' },
   { href: '/ferramentas', label: 'Ferramentas' },
