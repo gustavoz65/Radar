@@ -34,7 +34,10 @@ export function mapPierreAccount(account: PierreAccount, syncedAt: Date): NewBan
   return {
     externalId: account.accountId,
     providerCode: account.providerCode,
-    name: account.accountMarketingName ?? account.accountName,
+    // Falsy check, not nullish: Pierre may send an empty string for
+    // accountMarketingName, and a blank account name is worse than falling
+    // back to the plain accountName.
+    name: account.accountMarketingName || account.accountName,
     type: mapAccountType(account.accountType, account.accountSubtype),
     balance: account.accountBalance,
     currencyCode: account.accountCurrencyCode ?? 'BRL',
