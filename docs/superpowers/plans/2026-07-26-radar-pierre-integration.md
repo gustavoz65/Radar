@@ -484,16 +484,14 @@ Expected: 4/4 PASS.
 ```ts
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { authConfig } from '@/auth.config';
 import { verifyPassword } from '@/lib/auth/password';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: 'jwt' },
-  pages: { signIn: '/login' },
-  callbacks: {
-    // Without this, `export { auth as middleware }` runs but gates nothing —
-    // every protected route answers 200 to an anonymous request. Verified.
-    authorized: ({ auth }) => !!auth,
-  },
+  // Everything Edge-safe lives in auth.config.ts and is shared with the
+  // middleware. Only the Credentials provider — the part that touches bcrypt —
+  // is added here, and this module is never imported by the middleware.
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -508,9 +506,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const passwordHash = process.env.AUTH_USER_PASSWORD_HASH;
         if (!allowedEmail || !passwordHash) return null;
 
-        // Single-user app: the email must match exactly and the password must verify.
-        if (email.toLowerCase() !== allowedEmail.toLowerCase()) return null;
-        if (!(await verifyPassword(password, passwordHash))) return null;
+        // Single-user app: the email must match and the password must verify.
+        // Both checks run unconditionally — returning early on an email mismatch
+        // would skip bcrypt and make a wrong-email attempt measurably faster than
+        // a wrong-password one, turning response time into an email oracle.
+        const emailMatches = email.toLowerCase() === allowedEmail.toLowerCase();
+        const passwordMatches = await verifyPassword(password, passwordHash);
+        if (!emailMatches || !passwordMatches) return null;
 
         return { id: 'radar-user', email: allowedEmail, name: 'Radar' };
       },
@@ -529,10 +531,28 @@ import { handlers } from '@/auth';
 export const { GET, POST } = handlers;
 ```
 
-`middleware.ts`:
+`middleware.ts` — **imports the Edge-safe config, not `auth.ts`.** Next.js middleware runs on the Edge runtime, and `bcryptjs` does a top-level `import` of node `crypto`, so pulling `auth.ts` in here drags a Node-only module into the Edge bundle. Split the config: `auth.config.ts` holds everything Edge-safe (pages, the `authorized` callback, session strategy) and carries no provider; `auth.ts` spreads it and adds the Credentials provider, which is the only part that touches bcrypt and only ever runs in the Node route handler.
 
 ```ts
-export { auth as middleware } from '@/auth';
+// auth.config.ts — Edge-safe: no provider, no bcrypt, no node builtins.
+import type { NextAuthConfig } from 'next-auth';
+
+export const authConfig = {
+  session: { strategy: 'jwt' },
+  pages: { signIn: '/login' },
+  callbacks: {
+    authorized: ({ auth }) => !!auth,
+  },
+  providers: [],
+} satisfies NextAuthConfig;
+```
+
+```ts
+// middleware.ts
+import NextAuth from 'next-auth';
+import { authConfig } from '@/auth.config';
+
+export const { auth: middleware } = NextAuth(authConfig);
 
 export const config = {
   // Everything except Next internals, static assets and the auth endpoints.
