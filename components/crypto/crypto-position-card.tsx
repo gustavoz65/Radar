@@ -3,6 +3,7 @@ import { AreaHistoryChart } from '@/components/charts/area-history-chart';
 import { TrendValue } from '@/components/common/trend-value';
 import { formatBRL } from '@/lib/format/money';
 import { percentChange } from '@/lib/format/percent';
+import { surfaceCardClass } from '@/components/common/surface';
 
 const quantityFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 });
 
@@ -11,7 +12,7 @@ export function CryptoPositionCard({ position }: { position: CryptoPosition }) {
   const trendColor = totalReturn >= 0 ? 'var(--positive)' : 'var(--negative)';
 
   return (
-    <article className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+    <article className={surfaceCardClass}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-baseline gap-2">

@@ -2,6 +2,8 @@ import type { Account } from '@/lib/types';
 import { InstitutionBadge } from '@/components/common/institution-badge';
 import { formatBRL } from '@/lib/format/money';
 import { formatDateTime } from '@/lib/format/date';
+import { surfaceClass } from '@/components/common/surface';
+import { cn } from '@/lib/utils';
 
 const accountTypeLabels: Record<Account['type'], string> = {
   corrente: 'Conta corrente',
@@ -11,7 +13,7 @@ const accountTypeLabels: Record<Account['type'], string> = {
 
 export function AccountsList({ accounts }: { accounts: Account[] }) {
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+    <ul className={cn('divide-y divide-border', surfaceClass)}>
       {accounts.map((account) => (
         <li key={account.id} className="flex items-center gap-3 px-4 py-3">
           <InstitutionBadge institution={account.institution} />

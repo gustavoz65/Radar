@@ -7,6 +7,8 @@ import { FixedIncomeTable } from '@/components/fixed-income/fixed-income-table';
 import { formatBRL } from '@/lib/format/money';
 import { formatPercent, percentChange } from '@/lib/format/percent';
 import { getFixedIncomePositions, getMarketRates } from '@/lib/data/services';
+import { SubsectionTitle } from '@/components/common/typography';
+import { surfaceCardClass } from '@/components/common/surface';
 
 export default async function RendaFixaPage() {
   const [positions, rates] = await Promise.all([getFixedIncomePositions(), getMarketRates()]);
@@ -58,14 +60,14 @@ export default async function RendaFixaPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wider text-muted">Posições</h2>
+        <SubsectionTitle>Posições</SubsectionTitle>
         <FixedIncomeTable positions={positions} />
       </section>
 
-      <section className="rounded-lg border border-border bg-surface p-4 sm:p-5">
-        <h2 className="mb-4 text-sm uppercase tracking-wider text-muted">
+      <section className={surfaceCardClass}>
+        <SubsectionTitle className="mb-4 block">
           Taxa equivalente a.a. vs. indicadores
-        </h2>
+        </SubsectionTitle>
         <BarComparisonChart data={comparison} height={340} />
       </section>
     </div>
