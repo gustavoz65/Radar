@@ -663,6 +663,8 @@ node -e "require('bcryptjs').hash(process.argv[1],12).then(h=>console.log(h))" "
 
 Put the outputs in `AUTH_SECRET` and `AUTH_USER_PASSWORD_HASH`, and set `AUTH_USER_EMAIL`. **Do not print the chosen password into your report, and do not commit `.env.local`.**
 
+**Escape every `$` in the bcrypt hash as `\$` when writing it into `.env.local`.** `@next/env`'s dotenv-expand treats bcrypt's `$2b$12$…` as variable references and silently mangles the value on load (observed live: 60 chars in the file, 52 in `process.env`), even inside single quotes. A repo helper exists for this — `set-password.cjs`, which writes the escaped hash and self-verifies against a freshly loaded env. Task 10's README section must document this gotcha; hand-pasting an unescaped hash produces a login that can never succeed.
+
 - [ ] **Step 10: Verify the gate over HTTP**
 
 Start `npm run dev`, then with `curl`:
