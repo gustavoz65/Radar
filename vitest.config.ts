@@ -1,5 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
+
+// The repository suites are integration tests against the local MySQL, so they
+// need DATABASE_URL. Next loads .env.local on its own; Vitest does not.
+config({ path: '.env.local', quiet: true });
 
 export default defineConfig({
   test: {

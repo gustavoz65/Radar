@@ -1,0 +1,80 @@
+import 'server-only';
+import { db } from '@/lib/db/client';
+import { bankAccounts, bankTransactions } from '@/lib/db/schema';
+import { institutionForProviderCode } from '@/lib/pierre/institutions';
+import type { NewBankAccount, NewBankTransaction } from '@/lib/pierre/mappers';
+import type { Account } from '@/lib/types';
+
+/** Drizzle returns decimal columns as strings to protect precision. */
+function toNumber(value: string): number {
+  return Number(value);
+}
+
+export async function upsertAccounts(accounts: NewBankAccount[]): Promise<void> {
+  if (accounts.length === 0) return;
+
+  for (const account of accounts) {
+    await db
+      .insert(bankAccounts)
+      .values({
+        externalId: account.externalId,
+        providerCode: account.providerCode,
+        name: account.name,
+        type: account.type,
+        balance: account.balance.toFixed(2),
+        currencyCode: account.currencyCode,
+        lastSyncedAt: account.lastSyncedAt,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          providerCode: account.providerCode,
+          name: account.name,
+          type: account.type,
+          balance: account.balance.toFixed(2),
+          currencyCode: account.currencyCode,
+          lastSyncedAt: account.lastSyncedAt,
+        },
+      });
+  }
+}
+
+/**
+ * Returns the number of genuinely new rows; duplicates by externalId are skipped.
+ *
+ * INSERT IGNORE rather than ON DUPLICATE KEY UPDATE: mysql2 connects with the
+ * FOUND_ROWS flag, so a duplicate that updates nothing still reports
+ * affectedRows 1 — indistinguishable from a real insert. With IGNORE, skipped
+ * rows are not counted, so affectedRows is exactly the number inserted.
+ * The unique index on external_id is what enforces the dedupe; IGNORE only
+ * decides that hitting it is not an error.
+ */
+export async function insertTransactions(txs: NewBankTransaction[]): Promise<number> {
+  if (txs.length === 0) return 0;
+
+  const [result] = await db
+    .insert(bankTransactions)
+    .ignore()
+    .values(
+      txs.map((tx) => ({
+        externalId: tx.externalId,
+        description: tx.description,
+        category: tx.category,
+        amount: tx.amount.toFixed(2),
+        occurredAt: tx.occurredAt,
+      })),
+    );
+
+  return result.affectedRows;
+}
+
+export async function listAccounts(): Promise<Account[]> {
+  const rows = await db.select().from(bankAccounts).orderBy(bankAccounts.name);
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    institution: institutionForProviderCode(row.providerCode),
+    type: row.type,
+    balance: toNumber(row.balance),
+    lastUpdated: row.lastSyncedAt.toISOString(),
+  }));
+}
