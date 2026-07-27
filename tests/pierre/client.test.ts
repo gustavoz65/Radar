@@ -102,6 +102,28 @@ describe('getAccounts', () => {
       (error: Error) => !error.message.includes('sk-test-key'),
     );
   });
+
+  it('throws PierreContractError when a 200 response body is not valid JSON', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('<html>not json</html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      }),
+    );
+    await expect(getAccounts()).rejects.toBeInstanceOf(PierreContractError);
+  });
+
+  it('never puts the api key in the non-JSON-body error message', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('<html>not json</html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      }),
+    );
+    await expect(getAccounts()).rejects.toSatisfy(
+      (error: Error) => !error.message.includes('sk-test-key'),
+    );
+  });
 });
 
 describe('getTransactions', () => {
