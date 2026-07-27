@@ -44,7 +44,9 @@ as integrações deles**.
    Nunca uma caixa-preta, nunca uma recomendação direta de compra/venda.
 2. **A cor de assinatura do score (`--signature-gold`) nunca é reaproveitada** para
    variação de preço (alta/baixa usam `--positive`/`--negative`). São conceitos
-   diferentes e devem ser visualmente distintos.
+   diferentes e devem ser visualmente distintos. Classe de ativo é um terceiro conceito,
+   com tokens próprios (`--asset-fixed-income`/`--asset-crypto`/`--asset-equity`).
+   **Nenhuma cor vive como hex cru fora de `app/globals.css`** — inclusive em gráfico.
 3. **Toda tela é responsiva de verdade** — desktop e mobile são adaptações de primeira
    classe do mesmo layout, revisadas juntas, nunca "desktop primeiro, mobile depois".
 4. **Sem chamada de rede direta em componente.** Toda leitura de dados passa por
@@ -54,8 +56,12 @@ as integrações deles**.
    própria — evita qualquer dependência de asset de marca.
 6. **Dinheiro sempre formatado como BRL**; datas/horas tratadas como `Date`/ISO string
    nos fixtures (sem fuso a resolver nesta fase — dados são mocados).
-7. **Conventional Commits**; commits pequenos.
-8. Sem autenticação, sem multi-usuário, sem testes e2e nesta fase (specs 2-4 mudam isso).
+7. **Nada de estilizar heading solto.** Todo título/label usa um degrau de
+   `components/common/typography.tsx` (`PanelTitle`/`SubsectionTitle`/`DataLabel`), e todo
+   card usa `surfaceCardClass` de `components/common/surface.ts`. A tag (`h2`, `h3`) segue
+   a hierarquia do documento; o peso visual vem do degrau, não da tag.
+8. **Conventional Commits**; commits pequenos.
+9. Sem autenticação, sem multi-usuário, sem testes e2e nesta fase (specs 2-4 mudam isso).
 
 ## Comandos
 
