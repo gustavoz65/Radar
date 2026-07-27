@@ -145,7 +145,9 @@ services:
       MYSQL_USER: radar
       MYSQL_PASSWORD: radar
     ports:
-      - '3306:3306'
+      # Loopback only. A bare '3306:3306' binds 0.0.0.0, which would expose a
+      # database with a well-known password to every network the host joins.
+      - '127.0.0.1:3306:3306'
     volumes:
       - radar-mysql-data:/var/lib/mysql
     healthcheck:
@@ -158,7 +160,7 @@ volumes:
   radar-mysql-data:
 ```
 
-These are local development credentials for a container bound to localhost. They are deliberately committed so `docker compose up` works with no setup. Production hosting is explicitly out of scope for this spec.
+These are local development credentials for a container bound to the loopback interface only — note the `127.0.0.1:` prefix on the port mapping, which is what actually makes that true. They are deliberately committed so `docker compose up` works with no setup. Production hosting is explicitly out of scope for this spec.
 
 - [ ] **Step 4: Create `.env.example` and extend `.gitignore`**
 
