@@ -5,10 +5,11 @@ import type { AllocationSlice } from '@/lib/types';
 import { formatBRL } from '@/lib/format/money';
 import { formatPercent } from '@/lib/format/percent';
 
+/** Asset-class tokens, declared in `app/globals.css`. No raw hex in here. */
 const sliceColors: Record<AllocationSlice['assetClass'], string> = {
-  rendaFixa: 'var(--accent)',
-  cripto: '#a371f7',
-  acoes: '#2ea043',
+  rendaFixa: 'var(--asset-fixed-income)',
+  cripto: 'var(--asset-crypto)',
+  acoes: 'var(--asset-equity)',
 };
 
 export function AllocationChart({ slices }: { slices: AllocationSlice[] }) {
