@@ -27,16 +27,20 @@ Quatro sub-projetos independentes, cada um com sua própria spec e plano:
 
 1. **Frontend / dashboard** — Next.js, dados mocados. **Construído** (7 abas, plano em
    `docs/superpowers/plans/2026-07-26-radar-frontend-mvp.md`).
-2. Integração Open Finance real (Pierre — app da CloudWalk, `docs.pierre.finance`; o
-   nome NÃO é "Pier"). Em andamento.
+2. Integração Open Finance real (Pierre — app da CloudWalk; o nome NÃO é "Pier").
+   **Construído e puxando dados reais.** Contas, cartões, transações e "caixinhas" vêm do
+   MySQL, alimentados por sync sob demanda. ⚠️ **A doc em `docs.pierre.finance` está
+   errada** — `get-accounts` usa `id`/`name`/`type`, `balance` como string, e identifica o
+   banco por `connectorName`. Os schemas Zod em `lib/pierre/dto.ts` foram escritos contra
+   respostas ao vivo; não "corrija" para o formato documentado.
 3. Ingestão de dados de mercado (cripto, ações, CDI/Selic, notícias). Ainda não iniciado.
 4. Motor de análise probabilística (IA / score de confiança). Ainda não iniciado.
 
-Toda leitura de dados passa por `lib/data/services.ts`. No item 1 essas funções retornam
-fixtures; o item 2 substitui o **interior** delas por banco/Pierre sem que nenhum
-componente de UI mude. Nunca chame a Pierre nem o banco direto de um componente, e nunca
-importe fixture dentro de componente. Enquanto os itens 3–4 não existirem, **não invente
-as integrações deles**.
+Toda leitura de dados passa por `lib/data/services.ts` — inclusive status de sync. Hoje
+contas, posições e histórico vêm do MySQL; sinais, notícias e taxas ainda são fixtures,
+porque pertencem aos itens 3 e 4. Nunca chame a Pierre, o banco ou um repositório direto
+de um componente, e nunca importe fixture dentro de componente. Enquanto os itens 3–4 não
+existirem, **não invente as integrações deles**.
 
 ## Regras inegociáveis
 
@@ -61,16 +65,29 @@ as integrações deles**.
    card usa `surfaceCardClass` de `components/common/surface.ts`. A tag (`h2`, `h3`) segue
    a hierarquia do documento; o peso visual vem do degrau, não da tag.
 8. **Conventional Commits**; commits pequenos.
-9. Sem autenticação, sem multi-usuário, sem testes e2e nesta fase (specs 2-4 mudam isso).
+9. **Comentário é exceção, não hábito.** Clean code: o nome da função e do tipo carregam o
+   quê; comentário só entra quando explica um **porquê** que o código não consegue mostrar
+   — uma decisão contra-intuitiva, um bug de terceiro, um trade-off. Uma ou duas linhas.
+   Nunca parafraseie o que a linha abaixo já diz, nunca escreva parágrafo em bloco de
+   comentário, nunca deixe comentário de "histórico" (isso é trabalho do git log).
+   Se precisar de muitas linhas para explicar, o código provavelmente está errado.
+10. Sem multi-usuário e sem testes e2e nesta fase (specs 3-4 podem mudar isso).
 
 ## Comandos
 
 - `npm run dev` — servidor de desenvolvimento em http://localhost:3000
-- `npm run build` — build de produção
+- `npm run build` — build de produção (escreve em `.next`, é o que CI/Vercel usam)
+- `npm run build:check` — build de verificação em `.next-check`. **Use este durante uma
+  sessão com o `npm run dev` de pé**: os dois disputam `.next` e um build derruba o CSS
+  da aba aberta.
 - `npm run lint` — ESLint (next/core-web-vitals + TypeScript)
 - `npm run typecheck` — `tsc --noEmit`
-- `npm test` — testes unitários (Vitest)
+- `npm test` — testes (Vitest). Rodam contra o banco `radar_test`, nunca o de desenvolvimento.
 - `npm run format` — Prettier em todo o repositório
+- `docker compose up -d` — sobe o MySQL local
+- `npm run db:generate` / `db:migrate` / `db:studio` — Drizzle
+- `npm run db:setup:test` — cria e migra o banco de teste (rodar uma vez após clonar)
+- `npm run sync` — dispara um sync real da Pierre pela CLI, sem precisar de sessão
 
 ## Layout esperado do frontend
 

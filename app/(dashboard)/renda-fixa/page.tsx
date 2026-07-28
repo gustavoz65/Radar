@@ -27,11 +27,23 @@ export default async function RendaFixaPage() {
 
   const total = positions.reduce((sum, position) => sum + position.currentValue, 0);
   const invested = positions.reduce((sum, position) => sum + position.investedValue, 0);
+
+  // Only titles Radar can actually price take part in the average and the chart.
+  // A synced caixinha knows its contracted rate ("120% do CDI") but not the
+  // equivalent annual figure, and treating that as 0 would drag the average down
+  // and plot a bar claiming the money yields nothing.
+  const priced = positions.filter(
+    (position): position is typeof position & { effectiveAnnualRate: number } =>
+      position.effectiveAnnualRate !== null,
+  );
+  const pricedTotal = priced.reduce((sum, position) => sum + position.currentValue, 0);
   const weightedRate =
-    positions.reduce((sum, p) => sum + p.effectiveAnnualRate * p.currentValue, 0) / total;
+    pricedTotal === 0
+      ? null
+      : priced.reduce((sum, p) => sum + p.effectiveAnnualRate * p.currentValue, 0) / pricedTotal;
 
   const comparison: ComparisonBar[] = [
-    ...positions.map((position) => ({
+    ...priced.map((position) => ({
       label: position.name,
       value: position.effectiveAnnualRate,
       highlight: true,
@@ -55,7 +67,15 @@ export default async function RendaFixaPage() {
           value={formatBRL(total - invested)}
           hint={<TrendValue value={percentChange(invested, total)} format="percent" />}
         />
-        <StatCard label="Taxa média ponderada" value={`${formatPercent(weightedRate)} a.a.`} />
+        <StatCard
+          label="Taxa média ponderada"
+          value={weightedRate === null ? '—' : `${formatPercent(weightedRate)} a.a.`}
+          hint={
+            weightedRate === null ? (
+              <span className="text-muted">Taxa equivalente ainda não calculada</span>
+            ) : undefined
+          }
+        />
         <StatCard label="Títulos" value={String(positions.length)} />
       </section>
 

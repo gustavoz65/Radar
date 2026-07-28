@@ -47,6 +47,40 @@ describeDb('positions repository', () => {
     expect(position.investedValue).toBe(30000);
   });
 
+  it('reports no maturity and daily liquidity for an open-ended holding', async () => {
+    // A synced caixinha has no maturity date. Returning '' here used to crash the
+    // renda-fixa screen: formatDate('') throws RangeError: Invalid time value.
+    await createPosition({
+      assetClass: 'rendaFixa',
+      name: 'Mercado Pago · Grana',
+      institutionCode: 'MERCADO_PAGO',
+      quantity: 1,
+      unitValue: 1258.17,
+      investedValue: 1258.17,
+      contractedRate: '120% do CDI',
+      purchasedAt: new Date('2026-07-27T00:00:00.000Z'),
+    });
+
+    const [position] = await listPositions();
+    if (position.assetClass !== 'rendaFixa') throw new Error('expected a fixed income position');
+
+    expect(position.maturity).toBeNull();
+    expect(position.liquidity).toBe('diaria');
+    // Unknown, not zero — zero would render as "yields nothing".
+    expect(position.effectiveAnnualRate).toBeNull();
+    expect(position.rateLabel).toBe('120% do CDI');
+  });
+
+  it('keeps maturity and term liquidity for a dated title', async () => {
+    await createPosition(cdb);
+
+    const [position] = await listPositions();
+    if (position.assetClass !== 'rendaFixa') throw new Error('expected a fixed income position');
+
+    expect(position.maturity).toBe('2028-03-15');
+    expect(position.liquidity).toBe('vencimento');
+  });
+
   it('computes currentValue as quantity times unitValue', async () => {
     await createPosition({
       assetClass: 'cripto',

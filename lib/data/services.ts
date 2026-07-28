@@ -1,6 +1,7 @@
 import 'server-only';
 import { listAccounts } from '@/lib/repositories/accounts';
 import { listPortfolioHistory, listPositions } from '@/lib/repositories/positions';
+import { lastSync, lastSyncWithData } from '@/lib/repositories/sync-log';
 import { news } from './fixtures/news';
 import { marketRates } from './fixtures/rates';
 import { signals } from './fixtures/signals';
@@ -14,6 +15,7 @@ import type {
   NewsItem,
   PortfolioSummary,
   Signal,
+  SyncStatus,
 } from '@/lib/types';
 
 /**
@@ -94,6 +96,18 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
     allocation,
     history,
     averageScore,
+  };
+}
+
+/** Last sync attempt plus when data last landed, so a failure warns without blanking the screen. */
+export async function getSyncStatus(): Promise<SyncStatus> {
+  const [last, dataAt] = await Promise.all([lastSync(), lastSyncWithData()]);
+
+  return {
+    status: (last?.status as SyncStatus['status']) ?? null,
+    finishedAt: last?.finishedAt?.toISOString() ?? null,
+    error: last?.error ?? null,
+    lastSuccessfulAt: dataAt?.toISOString() ?? null,
   };
 }
 

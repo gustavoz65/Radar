@@ -10,7 +10,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    // suppressHydrationWarning covers only this element's attributes: browser
+    // extensions inject their own onto <html> before React hydrates.
+    <html
+      lang="pt-BR"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-dvh bg-bg font-sans text-text antialiased">{children}</body>
     </html>
   );

@@ -1,5 +1,5 @@
 import 'server-only';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { syncLogs } from '@/lib/db/schema';
 
@@ -28,6 +28,22 @@ export async function lastSuccessfulSync(): Promise<Date | null> {
     .select({ finishedAt: syncLogs.finishedAt })
     .from(syncLogs)
     .where(eq(syncLogs.status, 'success'))
+    .orderBy(desc(syncLogs.finishedAt))
+    .limit(1);
+  return row?.finishedAt ?? null;
+}
+
+/**
+ * When data last actually landed. A `partial` counts: it wrote the accounts and
+ * only failed to refresh some bank connection, so the screen is showing what it
+ * fetched. `lastSuccessfulSync` stays stricter because it drives the
+ * transactions window.
+ */
+export async function lastSyncWithData(): Promise<Date | null> {
+  const [row] = await db
+    .select({ finishedAt: syncLogs.finishedAt })
+    .from(syncLogs)
+    .where(inArray(syncLogs.status, ['success', 'partial']))
     .orderBy(desc(syncLogs.finishedAt))
     .limit(1);
   return row?.finishedAt ?? null;

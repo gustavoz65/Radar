@@ -1,5 +1,6 @@
 import type { Account } from '@/lib/types';
 import { InstitutionBadge } from '@/components/common/institution-badge';
+import { EmptyState } from '@/components/common/empty-state';
 import { formatBRL } from '@/lib/format/money';
 import { formatDateTime } from '@/lib/format/date';
 import { surfaceClass } from '@/components/common/surface';
@@ -24,6 +25,15 @@ function shortDay(iso: string): string {
  * owe" invites the reader to add them up.
  */
 export function AccountsList({ accounts }: { accounts: Account[] }) {
+  if (accounts.length === 0) {
+    return (
+      <EmptyState
+        title="Nenhuma conta conectada ainda"
+        description='Clique em "Atualizar agora" para buscar suas contas na Pierre.'
+      />
+    );
+  }
+
   return (
     <ul className={cn('divide-y divide-border', surfaceClass)}>
       {accounts.map((account) => (

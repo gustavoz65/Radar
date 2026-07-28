@@ -49,8 +49,15 @@ export interface FixedIncomePosition extends BasePosition {
   issuer: string;
   index: 'CDI' | 'SELIC' | 'IPCA' | 'PRE';
   rateLabel: string; // '110% do CDI', 'IPCA + 6,20%'
-  effectiveAnnualRate: number; // 15.57 -> % a.a., used for the CDI comparison chart
-  maturity: string; // ISO 'YYYY-MM-DD'
+  /**
+   * % a.a., used for the CDI comparison chart. Null when Radar cannot compute it
+   * — a synced caixinha reports "120% do CDI" but nothing prices that until
+   * sub-project 3 supplies a real CDI. Charting a 0 there would claim the
+   * holding yields nothing.
+   */
+  effectiveAnnualRate: number | null;
+  /** ISO 'YYYY-MM-DD', or null for an open-ended holding with daily liquidity. */
+  maturity: string | null;
   liquidity: 'diaria' | 'vencimento';
 }
 
@@ -114,6 +121,18 @@ export interface PortfolioSummary {
   allocation: AllocationSlice[];
   history: TimeSeriesPoint[]; // 12 monthly points
   averageScore: number;
+}
+
+/**
+ * What the last sync attempt achieved. A failed attempt never blanks the screen:
+ * `lastSuccessfulAt` is what the numbers on screen actually came from, and
+ * `error` is the warning shown next to them.
+ */
+export interface SyncStatus {
+  status: 'success' | 'partial' | 'error' | null;
+  finishedAt: string | null; // ISO datetime
+  error: string | null;
+  lastSuccessfulAt: string | null; // ISO datetime
 }
 
 export interface MarketRates {

@@ -7,16 +7,19 @@ import { TrendValue } from '@/components/common/trend-value';
 import { AccountsList, CreditCardsList } from '@/components/overview/accounts-list';
 import { ConfidenceGauge } from '@/components/signal/confidence-gauge';
 import { formatBRL } from '@/lib/format/money';
-import { getAccounts, getPortfolioSummary, getSignals } from '@/lib/data/services';
+import { getAccounts, getPortfolioSummary, getSignals, getSyncStatus } from '@/lib/data/services';
+import { SyncButton } from '@/components/sync/sync-button';
+import { SyncStatus } from '@/components/sync/sync-status';
 import { SubsectionTitle } from '@/components/common/typography';
 import { surfaceCardClass } from '@/components/common/surface';
 import { cn } from '@/lib/utils';
 
 export default async function VisaoGeralPage() {
-  const [summary, accounts, signals] = await Promise.all([
+  const [summary, accounts, signals, syncStatus] = await Promise.all([
     getPortfolioSummary(),
     getAccounts(),
     getSignals(),
+    getSyncStatus(),
   ]);
   const investedTotal = summary.allocation.reduce((total, slice) => total + slice.value, 0);
 
@@ -26,10 +29,16 @@ export default async function VisaoGeralPage() {
 
   return (
     <div className="space-y-8">
-      <SectionHeader
-        title="Visão geral"
-        description="Patrimônio consolidado a partir das contas conectadas via Open Finance."
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <SectionHeader
+          title="Visão geral"
+          description="Patrimônio consolidado a partir das contas conectadas via Open Finance."
+        />
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <SyncButton />
+          <SyncStatus status={syncStatus} />
+        </div>
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Patrimônio total" value={formatBRL(summary.totalValue)} />

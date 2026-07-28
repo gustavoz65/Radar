@@ -64,7 +64,7 @@ function formStateFrom(position: Position): FormState {
     unitValue: Number(unitValue.toFixed(2)),
     investedValue: position.investedValue,
     contractedRate: position.assetClass === 'rendaFixa' ? position.rateLabel : '',
-    maturityDate: position.assetClass === 'rendaFixa' ? position.maturity : '',
+    maturityDate: position.assetClass === 'rendaFixa' ? (position.maturity ?? '') : '',
     purchasedAt: new Date().toISOString().slice(0, 10),
     notes: '',
   };

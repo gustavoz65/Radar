@@ -2,6 +2,7 @@ import 'server-only';
 import { asc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { investmentPositions, positionSnapshots } from '@/lib/db/schema';
+import { institutionForProviderCode } from '@/lib/pierre/institutions';
 import type { NewSyncedPosition } from '@/lib/pierre/mappers';
 import type { AssetClass, Position, TimeSeriesPoint } from '@/lib/types';
 
@@ -109,12 +110,15 @@ export async function listPositions(): Promise<Position[]> {
       return {
         ...base,
         assetClass: 'rendaFixa',
-        issuer: row.institutionCode ?? '',
+        issuer: row.institutionCode ? institutionForProviderCode(row.institutionCode).name : '',
         index: 'CDI',
         rateLabel: row.contractedRate ?? '',
-        effectiveAnnualRate: 0,
-        maturity: row.maturityDate ? isoDate(row.maturityDate) : '',
-        liquidity: 'vencimento',
+        // Unknown, not zero — sub-project 3 is what will price these.
+        effectiveAnnualRate: null,
+        maturity: row.maturityDate ? isoDate(row.maturityDate) : null,
+        // No maturity means the money can be withdrawn any day, which is what a
+        // caixinha is; a dated title is held to its term.
+        liquidity: row.maturityDate ? 'vencimento' : 'diaria',
       };
     }
 

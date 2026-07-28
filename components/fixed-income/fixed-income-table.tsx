@@ -26,8 +26,12 @@ const columns: Column<FixedIncomePosition>[] = [
     key: 'effective',
     header: 'Equivalente a.a.',
     align: 'right',
+    // A dash, not 0%: Radar does not know the equivalent rate for a synced
+    // holding yet, and 0% would read as "this yields nothing".
     cell: (row) => (
-      <span className="tabular font-mono text-sm">{formatPercent(row.effectiveAnnualRate)}</span>
+      <span className="tabular font-mono text-sm">
+        {row.effectiveAnnualRate === null ? '—' : formatPercent(row.effectiveAnnualRate)}
+      </span>
     ),
   },
   {
@@ -38,7 +42,11 @@ const columns: Column<FixedIncomePosition>[] = [
   {
     key: 'maturity',
     header: 'Vencimento',
-    cell: (row) => <span className="tabular font-mono text-sm">{formatDate(row.maturity)}</span>,
+    cell: (row) => (
+      <span className="tabular font-mono text-sm">
+        {row.maturity === null ? '—' : formatDate(row.maturity)}
+      </span>
+    ),
   },
   {
     key: 'value',
