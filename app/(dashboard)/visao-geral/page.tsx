@@ -4,7 +4,7 @@ import { AreaHistoryChart } from '@/components/charts/area-history-chart';
 import { SectionHeader } from '@/components/common/section-header';
 import { StatCard } from '@/components/common/stat-card';
 import { TrendValue } from '@/components/common/trend-value';
-import { AccountsList } from '@/components/overview/accounts-list';
+import { AccountsList, CreditCardsList } from '@/components/overview/accounts-list';
 import { ConfidenceGauge } from '@/components/signal/confidence-gauge';
 import { formatBRL } from '@/lib/format/money';
 import { getAccounts, getPortfolioSummary, getSignals } from '@/lib/data/services';
@@ -19,6 +19,10 @@ export default async function VisaoGeralPage() {
     getSignals(),
   ]);
   const investedTotal = summary.allocation.reduce((total, slice) => total + slice.value, 0);
+
+  // A card's balance is a bill, so it never shares a list with cash balances.
+  const creditCards = accounts.filter((account) => account.type === 'credito');
+  const cashAccounts = accounts.filter((account) => account.type !== 'credito');
 
   return (
     <div className="space-y-8">
@@ -35,7 +39,19 @@ export default async function VisaoGeralPage() {
           hint={<TrendValue value={summary.dayChangePercent} format="percent" />}
         />
         <StatCard label="Total investido" value={formatBRL(investedTotal)} />
-        <StatCard label="Contas conectadas" value={String(accounts.length)} />
+        {/* Counts only cash accounts: calling 5 accounts and 3 cards "8 contas"
+            reads as eight places holding money. Cards get their own line. */}
+        <StatCard
+          label="Contas conectadas"
+          value={String(cashAccounts.length)}
+          hint={
+            creditCards.length > 0 ? (
+              <span className="text-muted">
+                {creditCards.length === 1 ? '+1 cartão' : `+${creditCards.length} cartões`}
+              </span>
+            ) : undefined
+          }
+        />
       </section>
 
       {/* Fluid proportions (fr): both columns are content and should grow with the
@@ -76,9 +92,17 @@ export default async function VisaoGeralPage() {
           <SubsectionTitle className="mb-4 block">Alocação por classe de ativo</SubsectionTitle>
           <AllocationChart slices={summary.allocation} />
         </div>
-        <div className="space-y-3">
-          <SubsectionTitle>Contas conectadas</SubsectionTitle>
-          <AccountsList accounts={accounts} />
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <SubsectionTitle>Contas correntes</SubsectionTitle>
+            <AccountsList accounts={cashAccounts} />
+          </div>
+          {creditCards.length > 0 ? (
+            <div className="space-y-3">
+              <SubsectionTitle>Cartões de crédito</SubsectionTitle>
+              <CreditCardsList accounts={creditCards} />
+            </div>
+          ) : null}
         </div>
       </section>
     </div>

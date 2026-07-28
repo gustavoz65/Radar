@@ -21,8 +21,13 @@ export const bankAccounts = mysqlTable(
     providerCode: varchar('provider_code', { length: 64 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     type: mysqlEnum('type', ['corrente', 'poupanca', 'investimento', 'credito']).notNull(),
+    /** For a `credito` account this is the current bill, not money held. */
     balance: decimal('balance', { precision: 15, scale: 2 }).notNull(),
     currencyCode: varchar('currency_code', { length: 8 }).notNull().default('BRL'),
+    /** Credit cards only — what Pierre's own dashboard shows as "disponível". */
+    creditLimit: decimal('credit_limit', { precision: 15, scale: 2 }),
+    availableCreditLimit: decimal('available_credit_limit', { precision: 15, scale: 2 }),
+    balanceDueDate: datetime('balance_due_date'),
     lastSyncedAt: datetime('last_synced_at').notNull(),
   },
   (table) => [uniqueIndex('bank_account_external_id_idx').on(table.externalId)],
@@ -47,24 +52,38 @@ export const bankTransactions = mysqlTable(
   ],
 );
 
-/** Investment holdings. Entered by hand — Pierre exposes no positions endpoint. */
-export const investmentPositions = mysqlTable('investment_position', {
-  id: int('id').primaryKey().autoincrement(),
-  assetClass: mysqlEnum('asset_class', ['rendaFixa', 'cripto', 'acoes']).notNull(),
-  name: varchar('name', { length: 255 }).notNull(),
-  /** Ticker for equities, symbol for crypto, null for fixed income. */
-  ticker: varchar('ticker', { length: 32 }),
-  institutionCode: varchar('institution_code', { length: 64 }),
-  quantity: decimal('quantity', { precision: 20, scale: 8 }).notNull(),
-  unitValue: decimal('unit_value', { precision: 15, scale: 2 }).notNull(),
-  investedValue: decimal('invested_value', { precision: 15, scale: 2 }).notNull(),
-  /** Fixed income only: the contracted rate label, e.g. "110% do CDI". */
-  contractedRate: varchar('contracted_rate', { length: 128 }),
-  maturityDate: datetime('maturity_date'),
-  purchasedAt: datetime('purchased_at').notNull(),
-  notes: text('notes'),
-  updatedAt: datetime('updated_at').notNull(),
-});
+/**
+ * Investment holdings. Mostly entered by hand — Pierre exposes no positions
+ * endpoint — except for "caixinhas" (reserved balances inside a checking
+ * account), which the sync imports and owns.
+ */
+export const investmentPositions = mysqlTable(
+  'investment_position',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    /** `pierre` rows are rewritten by every sync; editing them by hand is pointless. */
+    source: mysqlEnum('source', ['manual', 'pierre']).notNull().default('manual'),
+    /** Stable key for a synced row, so a re-sync updates instead of duplicating. */
+    externalId: varchar('external_id', { length: 191 }),
+    assetClass: mysqlEnum('asset_class', ['rendaFixa', 'cripto', 'acoes']).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    /** Ticker for equities, symbol for crypto, null for fixed income. */
+    ticker: varchar('ticker', { length: 32 }),
+    institutionCode: varchar('institution_code', { length: 64 }),
+    quantity: decimal('quantity', { precision: 20, scale: 8 }).notNull(),
+    unitValue: decimal('unit_value', { precision: 15, scale: 2 }).notNull(),
+    investedValue: decimal('invested_value', { precision: 15, scale: 2 }).notNull(),
+    /** Fixed income only: the contracted rate label, e.g. "110% do CDI". */
+    contractedRate: varchar('contracted_rate', { length: 128 }),
+    maturityDate: datetime('maturity_date'),
+    purchasedAt: datetime('purchased_at').notNull(),
+    notes: text('notes'),
+    updatedAt: datetime('updated_at').notNull(),
+  },
+  // Unique so a re-sync updates the caixinha instead of adding another. MySQL
+  // allows repeated NULLs here, which is what keeps manual rows unconstrained.
+  (table) => [uniqueIndex('investment_position_external_id_idx').on(table.externalId)],
+);
 
 /** One row per position per sync — this is what builds the history charts. */
 export const positionSnapshots = mysqlTable(

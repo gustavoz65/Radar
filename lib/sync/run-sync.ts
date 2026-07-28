@@ -1,6 +1,6 @@
 import type { PierreAccount, PierreTransaction } from '@/lib/pierre/dto';
-import { mapPierreAccount, mapPierreTransaction } from '@/lib/pierre/mappers';
-import type { NewBankAccount, NewBankTransaction } from '@/lib/pierre/mappers';
+import { mapPierreAccount, mapPierreTransaction, mapReservedBalances } from '@/lib/pierre/mappers';
+import type { NewBankAccount, NewBankTransaction, NewSyncedPosition } from '@/lib/pierre/mappers';
 
 const FALLBACK_WINDOW_DAYS = 90;
 
@@ -21,6 +21,7 @@ export interface SyncDeps {
     endDate?: string;
   }) => Promise<PierreTransaction[]>;
   upsertAccounts: (accounts: NewBankAccount[]) => Promise<void>;
+  upsertSyncedPositions: (positions: NewSyncedPosition[], syncedAt: Date) => Promise<number>;
   insertTransactions: (txs: NewBankTransaction[]) => Promise<number>;
   snapshotPositions: (capturedAt: Date) => Promise<void>;
   startSync: () => Promise<number>;
@@ -67,6 +68,10 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
     const accounts = pierreAccounts.map((account) => mapPierreAccount(account, startedAt));
     await deps.upsertAccounts(accounts);
     accountsWritten = accounts.length;
+
+    // Caixinhas are invested money that never appears in an account balance, so
+    // they are imported as fixed-income positions rather than left invisible.
+    await deps.upsertSyncedPositions(pierreAccounts.flatMap(mapReservedBalances), startedAt);
   } catch (error) {
     const message = safeMessage(error);
     await deps.finishSync(logId, 'error', message);

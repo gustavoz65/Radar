@@ -20,9 +20,17 @@ export interface Account {
   id: string;
   institution: Institution;
   type: AccountType;
+  /** For a `credito` account this is the current bill, not money held. */
   balance: number;
   lastUpdated: string; // ISO datetime
+  /** Credit cards only — what Pierre's dashboard calls "disponível". */
+  creditLimit: number | null;
+  availableCreditLimit: number | null;
+  balanceDueDate: string | null; // ISO 'YYYY-MM-DD'
 }
+
+/** `pierre` positions are rewritten by every sync, so the UI must not offer to edit them. */
+export type PositionSource = 'manual' | 'pierre';
 
 export interface BasePosition {
   id: string;
@@ -33,6 +41,7 @@ export interface BasePosition {
   investedValue: number;
   currentValue: number;
   history: TimeSeriesPoint[];
+  source: PositionSource;
 }
 
 export interface FixedIncomePosition extends BasePosition {

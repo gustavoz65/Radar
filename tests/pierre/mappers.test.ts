@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { institutionForProviderCode, normalizeProviderCode } from '@/lib/pierre/institutions';
-import { mapAccountType, mapPierreAccount, mapPierreTransaction } from '@/lib/pierre/mappers';
+import {
+  mapAccountType,
+  mapPierreAccount,
+  mapPierreTransaction,
+  mapReservedBalances,
+} from '@/lib/pierre/mappers';
 
 /** A real get-accounts row, trimmed to the fields the mapper reads. */
 const account = {
@@ -101,6 +106,9 @@ describe('mapPierreAccount', () => {
       type: 'corrente',
       balance: 1500.5,
       currencyCode: 'BRL',
+      creditLimit: null,
+      availableCreditLimit: null,
+      balanceDueDate: null,
       lastSyncedAt: syncedAt,
     });
   });
@@ -155,6 +163,111 @@ describe('mapPierreAccount', () => {
   it('treats an unparseable balance as zero instead of NaN', () => {
     const mapped = mapPierreAccount({ ...account, balance: 'indisponível' }, syncedAt);
     expect(mapped.balance).toBe(0);
+  });
+});
+
+describe('mapPierreAccount credit data', () => {
+  const syncedAt = new Date('2026-07-26T12:00:00.000Z');
+
+  it('keeps the limit figures Pierre dashboard shows as "disponível"', () => {
+    const mapped = mapPierreAccount(
+      {
+        ...account,
+        type: 'CREDIT',
+        subtype: 'CREDIT_CARD',
+        balance: '2157.00',
+        creditData: {
+          creditLimit: 5950,
+          availableCreditLimit: 3793,
+          balanceDueDate: '2026-07-05',
+        },
+      },
+      syncedAt,
+    );
+
+    // balance is the amount USED, and used + available === limit.
+    expect(mapped.balance).toBe(2157);
+    expect(mapped.creditLimit).toBe(5950);
+    expect(mapped.availableCreditLimit).toBe(3793);
+    expect(mapped.balance + mapped.availableCreditLimit!).toBe(mapped.creditLimit);
+    expect(mapped.balanceDueDate?.toISOString()).toBe('2026-07-05T00:00:00.000Z');
+  });
+
+  it('leaves the credit fields null on a cash account', () => {
+    const mapped = mapPierreAccount(account, syncedAt);
+    expect(mapped.creditLimit).toBeNull();
+    expect(mapped.availableCreditLimit).toBeNull();
+    expect(mapped.balanceDueDate).toBeNull();
+  });
+});
+
+describe('mapReservedBalances', () => {
+  /** The real Mercado Pago "Grana" pot: 1258.17 at 120% of the CDI, in an account whose balance is 0. */
+  const withPot = {
+    ...account,
+    id: 'acc_mp',
+    connectorName: 'Mercado Pago',
+    balance: '0.00',
+    bankData: {
+      reservedBalances: [
+        {
+          name: 'Grana',
+          identification: '82a58611-1e60-4c16-ace2-ea6af8c9a0ed',
+          availableAmounts: [
+            {
+              amount: 1258.17,
+              currencyCode: 'BRL',
+              remuneration: { indexer: 'CDI', postFixedIndexerPercentage: 1.199987 },
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  it('turns a caixinha into an importable fixed income position', () => {
+    const [position] = mapReservedBalances(withPot);
+
+    expect(position.name).toBe('Mercado Pago · Grana');
+    expect(position.amount).toBe(1258.17);
+    expect(position.institutionCode).toBe('MERCADO_PAGO');
+    expect(position.rateLabel).toBe('120% do CDI');
+  });
+
+  it('keys the position so a re-sync updates the same row', () => {
+    const first = mapReservedBalances(withPot);
+    const again = mapReservedBalances(withPot);
+    expect(first[0].externalId).toBe(again[0].externalId);
+    expect(first[0].externalId).toContain('acc_mp');
+  });
+
+  it('returns nothing for an account with no reserved balances', () => {
+    expect(mapReservedBalances(account)).toEqual([]);
+    expect(mapReservedBalances({ ...account, bankData: { reservedBalances: [] } })).toEqual([]);
+  });
+
+  it('skips an empty pot rather than importing a zero holding', () => {
+    const empty = {
+      ...withPot,
+      bankData: {
+        reservedBalances: [
+          { name: 'Vazia', identification: 'x', availableAmounts: [{ amount: 0 }] },
+        ],
+      },
+    };
+    expect(mapReservedBalances(empty)).toEqual([]);
+  });
+
+  it('falls back to a plain name when the pot has none and no rate is given', () => {
+    const bare = {
+      ...withPot,
+      bankData: {
+        reservedBalances: [{ identification: 'p1', availableAmounts: [{ amount: 10 }] }],
+      },
+    };
+    const [position] = mapReservedBalances(bare);
+    expect(position.name).toBe('Mercado Pago · Reserva');
+    expect(position.rateLabel).toBeNull();
   });
 });
 

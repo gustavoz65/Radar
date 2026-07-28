@@ -27,7 +27,7 @@ async function main() {
   const { getAccounts, getTransactions, manualUpdate } = await import('@/lib/pierre/client');
   const { insertTransactions, listAccounts, upsertAccounts } =
     await import('@/lib/repositories/accounts');
-  const { snapshotPositions } = await import('@/lib/repositories/positions');
+  const { snapshotPositions, upsertSyncedPositions } = await import('@/lib/repositories/positions');
   const { finishSync, lastSuccessfulSync, startSync } = await import('@/lib/repositories/sync-log');
   const { runSync } = await import('@/lib/sync/run-sync');
 
@@ -36,6 +36,7 @@ async function main() {
     getAccounts,
     getTransactions,
     upsertAccounts,
+    upsertSyncedPositions,
     insertTransactions,
     snapshotPositions,
     startSync,

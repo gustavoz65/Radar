@@ -42,6 +42,7 @@ function deps<T extends Partial<SyncDeps>>(overrides = {} as T) {
       },
     ]),
     upsertAccounts: vi.fn().mockResolvedValue(undefined),
+    upsertSyncedPositions: vi.fn().mockResolvedValue(0),
     insertTransactions: vi.fn().mockResolvedValue(1),
     snapshotPositions: vi.fn().mockResolvedValue(undefined),
     startSync: vi.fn().mockResolvedValue(7),
@@ -148,15 +149,13 @@ describe('runSync', () => {
 
   it('still reports success when every connection refreshed cleanly', async () => {
     const d = deps({
-      manualUpdate: vi
-        .fn()
-        .mockResolvedValue({
-          totalItems: 4,
-          completed: 4,
-          inProgress: 0,
-          needsUserInput: 0,
-          failed: null,
-        }),
+      manualUpdate: vi.fn().mockResolvedValue({
+        totalItems: 4,
+        completed: 4,
+        inProgress: 0,
+        needsUserInput: 0,
+        failed: null,
+      }),
     });
     await expect(runSync(d)).resolves.toMatchObject({ status: 'success', error: null });
   });

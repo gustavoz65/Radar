@@ -12,6 +12,17 @@ const accountTypeLabels: Record<Account['type'], string> = {
   credito: 'Cartão de crédito',
 };
 
+/** 'YYYY-MM-DD' as 'dd/mm'. The year is noise on a card that closes monthly. */
+function shortDay(iso: string): string {
+  const [, month, day] = iso.split('-');
+  return `${day}/${month}`;
+}
+
+/**
+ * Cash accounts. A credit card must never appear here: its balance is a bill,
+ * and a list where one row means "money you have" and another means "money you
+ * owe" invites the reader to add them up.
+ */
 export function AccountsList({ accounts }: { accounts: Account[] }) {
   return (
     <ul className={cn('divide-y divide-border', surfaceClass)}>
@@ -27,6 +38,40 @@ export function AccountsList({ accounts }: { accounts: Account[] }) {
           <span className="tabular shrink-0 font-mono text-sm text-text">
             {formatBRL(account.balance)}
           </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Credit cards, shown the way Pierre's own dashboard shows them: the headline
+ * number is the limit still available, with the current bill underneath. The
+ * bill is the account's `balance` — Pierre reports the amount used — but calling
+ * it a balance next to a checking account would read as money held.
+ */
+export function CreditCardsList({ accounts }: { accounts: Account[] }) {
+  return (
+    <ul className={cn('divide-y divide-border', surfaceClass)}>
+      {accounts.map((account) => (
+        <li key={account.id} className="flex items-center gap-3 px-4 py-3">
+          <InstitutionBadge institution={account.institution} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm text-text">{account.institution.name}</p>
+            <p className="text-xs text-muted">
+              Fatura {formatBRL(account.balance)}
+              {account.creditLimit !== null ? ` · limite ${formatBRL(account.creditLimit)}` : ''}
+              {account.balanceDueDate ? ` · vence ${shortDay(account.balanceDueDate)}` : ''}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="tabular font-mono text-sm text-text">
+              {account.availableCreditLimit === null
+                ? '—'
+                : formatBRL(account.availableCreditLimit)}
+            </p>
+            <p className="text-xs text-muted">disponível</p>
+          </div>
         </li>
       ))}
     </ul>

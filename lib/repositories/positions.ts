@@ -2,6 +2,7 @@ import 'server-only';
 import { asc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { investmentPositions, positionSnapshots } from '@/lib/db/schema';
+import type { NewSyncedPosition } from '@/lib/pierre/mappers';
 import type { AssetClass, Position, TimeSeriesPoint } from '@/lib/types';
 
 export interface PositionInput {
@@ -101,6 +102,7 @@ export async function listPositions(): Promise<Position[]> {
       investedValue: toNumber(row.investedValue),
       currentValue,
       history,
+      source: row.source,
     };
 
     if (row.assetClass === 'rendaFixa') {
@@ -136,6 +138,66 @@ export async function listPositions(): Promise<Position[]> {
       dividendYield: 0,
     };
   });
+}
+
+/**
+ * Imports the caixinhas a sync found, and drops the ones that no longer exist.
+ *
+ * `investedValue` is set to the current amount on every run rather than kept
+ * from the first sighting. Pierre reports what a pot holds today, not what was
+ * put into it, and freezing the first value would turn later deposits into a
+ * fabricated gain. The honest consequence is that a caixinha always shows a
+ * result of zero until sub-project 3 can price it properly.
+ */
+export async function upsertSyncedPositions(
+  positions: NewSyncedPosition[],
+  syncedAt: Date,
+): Promise<number> {
+  for (const position of positions) {
+    const amount = position.amount.toFixed(2);
+
+    await db
+      .insert(investmentPositions)
+      .values({
+        source: 'pierre',
+        externalId: position.externalId,
+        assetClass: 'rendaFixa',
+        name: position.name,
+        institutionCode: position.institutionCode,
+        quantity: '1.00000000',
+        unitValue: amount,
+        investedValue: amount,
+        contractedRate: position.rateLabel,
+        purchasedAt: syncedAt,
+        updatedAt: syncedAt,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          name: position.name,
+          institutionCode: position.institutionCode,
+          unitValue: amount,
+          investedValue: amount,
+          contractedRate: position.rateLabel,
+          updatedAt: syncedAt,
+          // purchasedAt deliberately untouched: it records when Radar first saw
+          // the pot, which is the closest thing to a start date we have.
+        },
+      });
+  }
+
+  // A pot the user emptied or closed stops arriving. Leaving the row behind
+  // would keep counting money that is not there.
+  const keep = new Set(positions.map((position) => position.externalId));
+  const synced = await db
+    .select({ id: investmentPositions.id, externalId: investmentPositions.externalId })
+    .from(investmentPositions)
+    .where(eq(investmentPositions.source, 'pierre'));
+
+  for (const row of synced) {
+    if (row.externalId && !keep.has(row.externalId)) await deletePosition(row.id);
+  }
+
+  return positions.length;
 }
 
 /** Writes one snapshot row per position at a single capture instant. */

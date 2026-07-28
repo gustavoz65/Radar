@@ -23,6 +23,9 @@ export async function upsertAccounts(accounts: NewBankAccount[]): Promise<void> 
         type: account.type,
         balance: account.balance.toFixed(2),
         currencyCode: account.currencyCode,
+        creditLimit: account.creditLimit?.toFixed(2) ?? null,
+        availableCreditLimit: account.availableCreditLimit?.toFixed(2) ?? null,
+        balanceDueDate: account.balanceDueDate ?? null,
         lastSyncedAt: account.lastSyncedAt,
       })
       .onDuplicateKeyUpdate({
@@ -32,6 +35,9 @@ export async function upsertAccounts(accounts: NewBankAccount[]): Promise<void> 
           type: account.type,
           balance: account.balance.toFixed(2),
           currencyCode: account.currencyCode,
+          creditLimit: account.creditLimit?.toFixed(2) ?? null,
+          availableCreditLimit: account.availableCreditLimit?.toFixed(2) ?? null,
+          balanceDueDate: account.balanceDueDate ?? null,
           lastSyncedAt: account.lastSyncedAt,
         },
       });
@@ -76,5 +82,9 @@ export async function listAccounts(): Promise<Account[]> {
     type: row.type,
     balance: toNumber(row.balance),
     lastUpdated: row.lastSyncedAt.toISOString(),
+    creditLimit: row.creditLimit === null ? null : toNumber(row.creditLimit),
+    availableCreditLimit:
+      row.availableCreditLimit === null ? null : toNumber(row.availableCreditLimit),
+    balanceDueDate: row.balanceDueDate ? row.balanceDueDate.toISOString().slice(0, 10) : null,
   }));
 }

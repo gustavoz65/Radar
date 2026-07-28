@@ -84,25 +84,30 @@ export function PositionsTable({ positions }: { positions: Position[] }) {
       key: 'actions',
       header: 'Ações',
       align: 'right',
-      cell: (position) => (
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setEditing(position)}
-            className="rounded-md border border-border px-2.5 py-1 text-xs text-text"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDelete(position)}
-            disabled={deletingId === position.id}
-            className="rounded-md border border-border px-2.5 py-1 text-xs text-negative disabled:opacity-60"
-          >
-            {deletingId === position.id ? 'Excluindo…' : 'Excluir'}
-          </button>
-        </div>
-      ),
+      cell: (position) =>
+        // A caixinha is owned by the sync: the next run would overwrite any edit
+        // and re-create any deletion, so offering the buttons would be a lie.
+        position.source === 'pierre' ? (
+          <span className="text-xs text-muted">Sincronizado</span>
+        ) : (
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(position)}
+              className="rounded-md border border-border px-2.5 py-1 text-xs text-text"
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(position)}
+              disabled={deletingId === position.id}
+              className="rounded-md border border-border px-2.5 py-1 text-xs text-negative disabled:opacity-60"
+            >
+              {deletingId === position.id ? 'Excluindo…' : 'Excluir'}
+            </button>
+          </div>
+        ),
     },
   ];
 

@@ -29,6 +29,52 @@ export class PierreContractError extends Error {
  * figure as a number. Both are accepted so a change on either side does not
  * break the sync.
  */
+/**
+ * How a reserved balance is remunerated, e.g. 119.9987% of the CDI.
+ * `postFixedIndexerPercentage` is a ratio (1.199987), not a percentage.
+ */
+const pierreRemuneration = z.object({
+  indexer: z.string().nullish(),
+  postFixedIndexerPercentage: z.number().nullish(),
+  preFixedRate: z.number().nullish(),
+});
+
+/**
+ * A "caixinha": money held inside a checking account but set aside, usually
+ * earning interest. It is NOT part of the account's `balance` — Mercado Pago
+ * reports a 0.00 balance alongside a 1258.17 reserved pot.
+ */
+const pierreReservedBalance = z.object({
+  name: z.string().nullish(),
+  identification: z.string().nullish(),
+  availableAmounts: z
+    .array(
+      z.object({
+        amount: z.number(),
+        currencyCode: z.string().nullish(),
+        remuneration: pierreRemuneration.nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+const pierreBankData = z.object({
+  closingBalance: z.number().nullish(),
+  reservedBalances: z.array(pierreReservedBalance).nullish(),
+  automaticallyInvestedBalance: z.number().nullish(),
+  overdraftContractedLimit: z.number().nullish(),
+});
+
+/** Credit-card limits. Pierre's own dashboard shows `availableCreditLimit`, not `balance`. */
+const pierreCreditData = z.object({
+  brand: z.string().nullish(),
+  level: z.string().nullish(),
+  creditLimit: z.number().nullish(),
+  availableCreditLimit: z.number().nullish(),
+  balanceDueDate: z.string().nullish(),
+  minimumPayment: z.number().nullish(),
+});
+
 const pierreAccount = z.object({
   id: z.string(),
   name: z.string(),
@@ -36,6 +82,7 @@ const pierreAccount = z.object({
   type: z.string(),
   /** 'CHECKING_ACCOUNT' | 'SAVINGS' | 'CREDIT_CARD' — note: not 'SAVINGS_ACCOUNT'. */
   subtype: z.string().nullish(),
+  /** For a CREDIT account this is the amount USED, i.e. the current bill. */
   balance: z.union([z.string(), z.number()]),
   currencyCode: z.string().nullish(),
   /** The institution's display name, e.g. 'Banco do Brasil'. Null for Pierre's own wallet. */
@@ -44,7 +91,11 @@ const pierreAccount = z.object({
   customName: z.string().nullish(),
   marketingName: z.string().nullish(),
   itemIsActive: z.boolean().nullish(),
+  bankData: pierreBankData.nullish(),
+  creditData: pierreCreditData.nullish(),
 });
+
+export type PierreReservedBalance = z.infer<typeof pierreReservedBalance>;
 
 export const pierreAccountsResponse = z.object({
   success: z.boolean(),

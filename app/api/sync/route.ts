@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { getAccounts, getTransactions, manualUpdate } from '@/lib/pierre/client';
 import { insertTransactions, upsertAccounts } from '@/lib/repositories/accounts';
-import { snapshotPositions } from '@/lib/repositories/positions';
+import { snapshotPositions, upsertSyncedPositions } from '@/lib/repositories/positions';
 import { finishSync, lastSuccessfulSync, startSync } from '@/lib/repositories/sync-log';
 import { runSync } from '@/lib/sync/run-sync';
 
@@ -18,6 +18,7 @@ export async function POST() {
     getAccounts,
     getTransactions,
     upsertAccounts,
+    upsertSyncedPositions,
     insertTransactions,
     snapshotPositions,
     startSync,
