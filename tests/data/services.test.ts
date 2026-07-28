@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '@/lib/db/client';
-import { bankAccounts, investmentPositions, positionSnapshots } from '@/lib/db/schema';
+import { bankAccounts, investmentPositions, positionSnapshots, syncLogs } from '@/lib/db/schema';
 import { createPosition, snapshotPositions } from '@/lib/repositories/positions';
 import { upsertAccounts } from '@/lib/repositories/accounts';
+import { finishSync, startSync } from '@/lib/repositories/sync-log';
 import {
   getAccounts,
   getCryptoPositions,
@@ -13,6 +14,7 @@ import {
   getPortfolioSummary,
   getSignalById,
   getSignals,
+  getSyncStatus,
 } from '@/lib/data/services';
 
 const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
@@ -104,6 +106,52 @@ describeDb('services over a real database', () => {
       // Both snapshots have the same value, so the change is exactly zero.
       expect(summary.dayChangeValue).toBe(0);
       expect(summary.dayChangePercent).toBe(0);
+    });
+  });
+
+  describe('sync status', () => {
+    beforeEach(async () => {
+      await db.delete(syncLogs);
+    });
+
+    afterEach(async () => {
+      await db.delete(syncLogs);
+    });
+
+    it('reports nothing before the first sync', async () => {
+      await expect(getSyncStatus()).resolves.toEqual({
+        status: null,
+        finishedAt: null,
+        error: null,
+        lastSuccessfulAt: null,
+      });
+    });
+
+    it('counts a partial sync as an update', async () => {
+      // A partial wrote the accounts and only failed to refresh a bank, so the
+      // screen showing that data must not claim nothing ever completed.
+      const id = await startSync();
+      await finishSync(id, 'partial', '1 de 5 conexões não atualizaram.');
+
+      const status = await getSyncStatus();
+      expect(status.status).toBe('partial');
+      expect(status.lastSuccessfulAt).not.toBeNull();
+      expect(status.error).toContain('não atualizaram');
+    });
+
+    it('keeps the last good timestamp when a later attempt fails outright', async () => {
+      const good = await startSync();
+      await finishSync(good, 'success');
+      const { lastSuccessfulAt: afterGood } = await getSyncStatus();
+
+      const bad = await startSync();
+      await finishSync(bad, 'error', 'Pierre rejeitou a chave de API.');
+
+      const status = await getSyncStatus();
+      expect(status.status).toBe('error');
+      expect(status.error).toContain('chave de API');
+      // The numbers on screen still came from the good run.
+      expect(status.lastSuccessfulAt).toBe(afterGood);
     });
   });
 
