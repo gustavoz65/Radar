@@ -14,12 +14,12 @@ Fixa/Cripto/Ações e, futuramente, o motor de análise
 
 ## Fontes de dados (pesquisadas e validadas)
 
-| Dado                   | Fonte                                                                | Custo/limite                         | Observação                                                            |
-| ---------------------- | -------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------- |
-| Selic, CDI             | **BCB SGS** — `api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados` | Grátis, sem autenticação             | Série 11 = Selic (meta definida pelo Copom). Série 12 = CDI.          |
-| Ações, FIIs, BDRs (B3) | **brapi.dev**                                                        | Grátis com token: 15.000 req/mês     | 4 ativos (PETR4, MGLU3, VALE3, ITUB4) funcionam sem token, para teste |
-| Criptomoedas           | **CoinGecko API**                                                    | Grátis: 10.000 chamadas/mês, 100/min | Preços cotados em USD — precisa converter para BRL                    |
-| Notícias               | RSS do **InfoMoney** e **Investing.com Brasil**                      | Grátis                               | Sem API key; parse de XML server-side                                 |
+| Dado                   | Fonte                                                                | Custo/limite                          | Observação                                                                           |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
+| Selic, CDI             | **BCB SGS** — `api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados` | Grátis, sem autenticação              | Série 11 = Selic (meta definida pelo Copom). Série 12 = CDI.                         |
+| Ações, FIIs, BDRs (B3) | **brapi.dev**                                                        | Grátis com token: 15.000 req/mês      | 4 ativos (PETR4, MGLU3, VALE3, ITUB4) funcionam sem token, para teste                |
+| Criptomoedas           | **CCXT** (`npm install ccxt`) — API unificada sobre 100+ exchanges   | Grátis, sem chave para dados públicos | Ler pares **/BRL** direto (Binance, Mercado Bitcoin, Foxbit): sem conversão de moeda |
+| Notícias               | RSS do **InfoMoney** e **Investing.com Brasil**                      | Grátis                                | Sem API key; parse de XML server-side                                                |
 
 ## Escopo
 
@@ -29,8 +29,9 @@ Fixa/Cripto/Ações e, futuramente, o motor de análise
 - Persistência histórica no mesmo MySQL (Docker Compose) do sub-projeto 2 — cada sync grava um
   novo ponto na série, construindo o histórico ao longo do tempo (essas APIs dão o
   presente/recente, não necessariamente anos de histórico gratuito).
-- Conversão USD→BRL para cripto (via endpoint de conversão do próprio CoinGecko, ou
-  câmbio PTAX do BCB — decidir na implementação, ambos gratuitos).
+- Cripto cotada **direto em BRL** via CCXT, lendo pares `BTC/BRL`, `ETH/BRL` etc. Se um
+  ativo só existir contra USDT na exchange escolhida, aí sim converter — usando PTAX do
+  BCB, que já é uma fonte do projeto.
 - Categorização de notícias por palavra-chave/heurística simples (Selic/Copom, cripto,
   ações, bancos) — regra determinística, sem IA nesta fase.
 
@@ -49,10 +50,22 @@ Fixa/Cripto/Ações e, futuramente, o motor de análise
   chamadas nas fontes externas feitas só no servidor.
 - **Sincronização sob demanda**: o mesmo botão "Atualizar agora" da Visão Geral também
   atualiza indicadores/cotações/notícias (uma chamada, várias fontes em paralelo).
-- **Debounce**: para não gastar as cotas gratuitas (principalmente CoinGecko/brapi) em
-  cliques repetidos, a rota ignora novo fetch de uma fonte se o último sync foi há
-  menos de N minutos (configurável; sugestão inicial: 15 min) e serve o dado em cache
-  do banco.
+- **Debounce**: para não gastar cota (brapi) nem tomar ban de exchange (CCXT), a rota
+  ignora novo fetch de uma fonte se o último sync foi há menos de N minutos
+  (configurável; sugestão inicial: 15 min) e serve o dado em cache do banco.
+
+### Regras de uso da CCXT
+
+Três restrições que a implementação precisa respeitar:
+
+1. **Nunca instanciar com `apiKey`/`secret`.** O Radar é read-only sobre dado financeiro
+   (restrição global do produto) e a CCXT é uma biblioteca de _trading_ — sem credencial,
+   os métodos privados (`createOrder`, `withdraw`) são inalcançáveis por construção.
+2. **Uma instância por exchange, reutilizada.** O rate limiter da CCXT vive na instância;
+   criar uma nova a cada request reinicia o limitador e leva a ban. Mesmo padrão do pool
+   do MySQL em `lib/db/client.ts`.
+3. **Só no servidor.** A biblioteca tem alguns MB; entra em Route Handler, nunca em
+   componente de cliente.
 
 ## Modelo de dados (novas tabelas)
 
