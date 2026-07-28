@@ -82,8 +82,9 @@ Três restrições que a implementação precisa respeitar:
 
 ## Testes
 
-- Unitários: parsing de cada fonte (BCB SGS, brapi, CoinGecko, RSS) para os tipos
-  internos, incluindo casos de resposta vazia/malformada.
+- Unitários: parsing de cada fonte (BCB SGS, brapi, CCXT, RSS) para os tipos internos,
+  incluindo casos de resposta vazia/malformada. A CCXT é mockada — a suíte nunca chama
+  uma exchange de verdade.
 - Unitários: heurística de categorização de notícias.
 - Integração: rota de sync com as quatro fontes mockadas, cobrindo sucesso parcial
   (algumas fontes falham, outras não) e o debounce de cota.
