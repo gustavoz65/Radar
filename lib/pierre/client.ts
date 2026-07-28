@@ -1,4 +1,5 @@
 import 'server-only';
+import { cached } from '@/lib/cache/redis';
 import {
   type PierreAccount,
   type PierreBalance,
@@ -12,6 +13,25 @@ import {
 } from './dto';
 
 const BASE_URL = 'https://pierre.finance/tools/api';
+
+/**
+ * Cache TTLs, in seconds. These double as a debounce on "Atualizar agora":
+ * repeated clicks stop hammering Pierre without making the button feel dead.
+ *
+ * manual-update is the slow call that asks each bank to refresh, and banks do
+ * not re-answer within seconds, so it holds much longer than the reads.
+ */
+const TTL = {
+  manualUpdate: 5 * 60,
+  reads: 60,
+} as const;
+
+/** Bump when a DTO changes shape, so entries cached under the old schema are abandoned. */
+const CACHE_VERSION = 'v1';
+
+function cacheKey(...parts: string[]): string {
+  return ['pierre', CACHE_VERSION, ...parts].join(':');
+}
 
 /** The API key is rejected or expired. The user must generate a new one. */
 export class PierreAuthError extends Error {
@@ -77,13 +97,17 @@ async function request(path: string, method: 'GET' | 'POST'): Promise<unknown> {
 }
 
 export async function getAccounts(): Promise<PierreAccount[]> {
-  const payload = await request('get-accounts', 'GET');
-  return parsePierre(pierreAccountsResponse, payload, 'get-accounts').data;
+  return cached(cacheKey('get-accounts'), TTL.reads, async () => {
+    const payload = await request('get-accounts', 'GET');
+    return parsePierre(pierreAccountsResponse, payload, 'get-accounts').data;
+  });
 }
 
 export async function getBalance(): Promise<PierreBalance> {
-  const payload = await request('get-balance', 'GET');
-  return parsePierre(pierreBalanceResponse, payload, 'get-balance').data;
+  return cached(cacheKey('get-balance'), TTL.reads, async () => {
+    const payload = await request('get-balance', 'GET');
+    return parsePierre(pierreBalanceResponse, payload, 'get-balance').data;
+  });
 }
 
 export async function getTransactions(range: {
@@ -95,8 +119,16 @@ export async function getTransactions(range: {
   if (range.endDate) params.set('endDate', range.endDate);
 
   const query = params.toString();
-  const payload = await request(`get-transactions${query ? `?${query}` : ''}`, 'GET');
-  return parsePierre(pierreTransactionsResponse, payload, 'get-transactions').data;
+
+  // The range is part of the key: two different windows are two different answers.
+  return cached(
+    cacheKey('get-transactions', range.startDate ?? 'all', range.endDate ?? 'now'),
+    TTL.reads,
+    async () => {
+      const payload = await request(`get-transactions${query ? `?${query}` : ''}`, 'GET');
+      return parsePierre(pierreTransactionsResponse, payload, 'get-transactions').data;
+    },
+  );
 }
 
 /** What a refresh actually achieved, per connected institution. */
@@ -119,6 +151,10 @@ export interface PierreUpdateStatus {
  * reporting a clean success over stale data.
  */
 export async function manualUpdate(): Promise<PierreUpdateStatus> {
+  return cached(cacheKey('manual-update'), TTL.manualUpdate, requestManualUpdate);
+}
+
+async function requestManualUpdate(): Promise<PierreUpdateStatus> {
   const payload = await request('manual-update', 'POST');
   const parsed = parsePierre(pierreManualUpdateResponse, payload, 'manual-update');
   const details = parsed.details;

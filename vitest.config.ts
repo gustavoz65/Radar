@@ -11,6 +11,12 @@ config({ path: '.env.local', quiet: true });
 // synced accounts and transactions. Redirect to the parallel `_test` schema that
 // `npm run db:setup:test` creates. DATABASE_URL_TEST overrides if you want the
 // test database somewhere else entirely.
+// The suite must never reach Upstash: tests stub global fetch, which would
+// intercept the cache's own calls, and a shared cache would leak state between
+// runs. Unset here, the cache degrades to a pass-through.
+delete process.env.UPSTASH_REDIS_REST_URL;
+delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
 if (process.env.DATABASE_URL_TEST) {
   process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
 } else if (process.env.DATABASE_URL) {
