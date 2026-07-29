@@ -3,6 +3,7 @@ import type { CryptoQuote } from '@/lib/market/crypto';
 import type { EquityQuote } from '@/lib/market/equities';
 import type { RawNews } from '@/lib/market/news';
 import type { Quote } from '@/lib/repositories/market';
+import { CRYPTO_WATCHLIST, EQUITY_WATCHLIST, withWatchlist } from '@/lib/market/watchlist';
 
 export interface HeldAssets {
   crypto: string[];
@@ -65,7 +66,7 @@ export async function runMarketSync(deps: MarketSyncDeps): Promise<MarketSyncRes
     record(
       'cripto',
       async () => {
-        const quotes = await deps.fetchCryptoQuotes(held.crypto);
+        const quotes = await deps.fetchCryptoQuotes(withWatchlist(CRYPTO_WATCHLIST, held.crypto));
         return deps.saveQuotes(
           'cripto',
           quotes.map((quote) => ({ ticker: quote.symbol, ...quote })),
@@ -77,7 +78,7 @@ export async function runMarketSync(deps: MarketSyncDeps): Promise<MarketSyncRes
     record(
       'ações',
       async () => {
-        const quotes = await deps.fetchEquityQuotes(held.equities);
+        const quotes = await deps.fetchEquityQuotes(withWatchlist(EQUITY_WATCHLIST, held.equities));
         return deps.saveQuotes('acoes', quotes, collectedAt);
       },
       0,

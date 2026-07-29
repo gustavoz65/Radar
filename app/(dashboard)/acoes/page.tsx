@@ -1,58 +1,70 @@
 import { SectionHeader } from '@/components/common/section-header';
 import { StatCard } from '@/components/common/stat-card';
 import { TrendValue } from '@/components/common/trend-value';
-import { EmptyState } from '@/components/common/empty-state';
+import { SubsectionTitle } from '@/components/common/typography';
 import { KindFilter } from '@/components/equities/kind-filter';
+import { MarketQuotesTable } from '@/components/market/market-quotes-table';
 import { formatBRL } from '@/lib/format/money';
-import { formatPercent, percentChange } from '@/lib/format/percent';
-import { getEquityPositions } from '@/lib/data/services';
+import { percentChange } from '@/lib/format/percent';
+import { getEquityMarket, getEquityPositions } from '@/lib/data/services';
 
 export default async function AcoesPage() {
-  const positions = await getEquityPositions();
-
-  if (positions.length === 0) {
-    return (
-      <div className="space-y-8">
-        <SectionHeader title="Ações e FIIs" />
-        <EmptyState
-          title="Nenhuma posição em renda variável ainda"
-          description="A Pierre não expõe carteira de investimentos, então ações e FIIs são cadastrados em Posições. Depois disso a cotação da B3 passa a ser buscada a cada atualização."
-        />
-      </div>
-    );
-  }
+  const [positions, market] = await Promise.all([getEquityPositions(), getEquityMarket()]);
 
   const total = positions.reduce((sum, position) => sum + position.currentValue, 0);
   const invested = positions.reduce((sum, position) => sum + position.investedValue, 0);
-  const weightedDy =
-    positions.reduce((sum, p) => sum + p.dividendYield * p.currentValue, 0) / total;
-  const dayChange = positions.reduce((sum, p) => sum + p.changeDay * p.currentValue, 0) / total;
+  const best = market.reduce<(typeof market)[number] | null>(
+    (top, quote) =>
+      quote.changePercent !== null && (!top || quote.changePercent > (top.changePercent ?? 0))
+        ? quote
+        : top,
+    null,
+  );
 
   return (
     <div className="space-y-8">
       <SectionHeader
         title="Ações e FIIs"
-        description="Carteira de renda variável com desempenho acumulado e dividend yield."
+        description="Cotações da B3, e a sua posição quando houver."
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total em renda variável" value={formatBRL(total)} />
+        <StatCard label="Sua posição" value={formatBRL(total)} />
         <StatCard
           label="Resultado acumulado"
-          value={formatBRL(total - invested)}
-          hint={<TrendValue value={percentChange(invested, total)} format="percent" />}
+          value={positions.length > 0 ? formatBRL(total - invested) : '—'}
+          hint={
+            positions.length > 0 ? (
+              <TrendValue value={percentChange(invested, total)} format="percent" />
+            ) : undefined
+          }
         />
         <StatCard
-          label="Variação do dia"
-          value={formatBRL((total * dayChange) / 100)}
-          hint={<TrendValue value={dayChange} format="percent" />}
+          label="Maior alta do dia"
+          value={best?.ticker ?? '—'}
+          hint={
+            best?.changePercent != null ? (
+              <TrendValue value={best.changePercent} format="percent" />
+            ) : undefined
+          }
         />
-        <StatCard label="DY médio ponderado" value={`${formatPercent(weightedDy, 1)} a.a.`} />
+        <StatCard label="Ativos acompanhados" value={String(market.length)} />
       </section>
 
-      <section>
-        <KindFilter positions={positions} />
+      <section className="space-y-3">
+        <SubsectionTitle>Mercado</SubsectionTitle>
+        <MarketQuotesTable
+          quotes={market}
+          emptyDescription='Clique em "Atualizar agora" na visão geral para buscar as cotações da B3.'
+        />
       </section>
+
+      {positions.length > 0 ? (
+        <section className="space-y-3">
+          <SubsectionTitle>Sua carteira</SubsectionTitle>
+          <KindFilter positions={positions} />
+        </section>
+      ) : null}
     </div>
   );
 }

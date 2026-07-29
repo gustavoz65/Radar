@@ -4,7 +4,7 @@ import { db } from '@/lib/db/client';
 import { economicIndicators, marketPrices, newsItems } from '@/lib/db/schema';
 import type { IndicatorReading, IndicatorSeries } from '@/lib/market/bcb';
 import type { RawNews } from '@/lib/market/news';
-import type { MarketRates, NewsItem, TimeSeriesPoint } from '@/lib/types';
+import type { MarketQuote, MarketRates, NewsItem, TimeSeriesPoint } from '@/lib/types';
 
 export interface Quote {
   ticker: string;
@@ -122,6 +122,31 @@ export async function latestQuotes(
     });
   }
   return latest;
+}
+
+/** Latest quote per ticker as a list, for the market tables. */
+export async function listQuotes(assetClass: 'cripto' | 'acoes'): Promise<MarketQuote[]> {
+  const rows = await db
+    .select()
+    .from(marketPrices)
+    .where(eq(marketPrices.assetClass, assetClass))
+    .orderBy(desc(marketPrices.collectedAt));
+
+  const seen = new Set<string>();
+  const quotes: MarketQuote[] = [];
+
+  for (const row of rows) {
+    if (seen.has(row.ticker)) continue;
+    seen.add(row.ticker);
+    quotes.push({
+      ticker: row.ticker,
+      priceBrl: toNumber(row.priceBrl),
+      changePercent: row.changePercent === null ? null : toNumber(row.changePercent),
+      collectedAt: row.collectedAt.toISOString(),
+    });
+  }
+
+  return quotes.sort((a, b) => a.ticker.localeCompare(b.ticker));
 }
 
 /** One point per day per ticker, for the position history charts. */

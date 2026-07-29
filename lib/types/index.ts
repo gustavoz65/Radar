@@ -136,6 +136,14 @@ export interface SyncStatus {
   lastSuccessfulAt: string | null; // ISO datetime
 }
 
+/** A quote from the market, independent of whether the user holds the asset. */
+export interface MarketQuote {
+  ticker: string;
+  priceBrl: number;
+  changePercent: number | null;
+  collectedAt: string; // ISO datetime
+}
+
 export interface MarketRates {
   selic: number; // 14.25
   cdi: number; // 14.15

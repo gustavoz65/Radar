@@ -1,6 +1,6 @@
 import 'server-only';
 import { listAccounts } from '@/lib/repositories/accounts';
-import { latestQuotes, latestRates, listNews } from '@/lib/repositories/market';
+import { latestQuotes, latestRates, listNews, listQuotes } from '@/lib/repositories/market';
 import { listPortfolioHistory, listPositions } from '@/lib/repositories/positions';
 import { lastSync, lastSyncWithData } from '@/lib/repositories/sync-log';
 import { effectiveAnnualRate } from '@/lib/market/rates';
@@ -11,6 +11,7 @@ import type {
   CryptoPosition,
   EquityPosition,
   FixedIncomePosition,
+  MarketQuote,
   MarketRates,
   NewsItem,
   PortfolioSummary,
@@ -161,4 +162,16 @@ export async function getNews(): Promise<NewsItem[]> {
 /** Null until the first market sync collects the BCB series. */
 export async function getMarketRates(): Promise<MarketRates | null> {
   return latestRates();
+}
+
+/**
+ * The market itself, not the portfolio. Pierre covers banks; these tabs exist so
+ * the user can see prices before deciding to buy anything.
+ */
+export async function getCryptoMarket(): Promise<MarketQuote[]> {
+  return listQuotes('cripto');
+}
+
+export async function getEquityMarket(): Promise<MarketQuote[]> {
+  return listQuotes('acoes');
 }
