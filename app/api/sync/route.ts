@@ -6,6 +6,8 @@ import { insertTransactions, upsertAccounts } from '@/lib/repositories/accounts'
 import { snapshotPositions, upsertSyncedPositions } from '@/lib/repositories/positions';
 import { finishSync, lastSuccessfulSync, startSync } from '@/lib/repositories/sync-log';
 import { runSync } from '@/lib/sync/run-sync';
+import { runMarketSync } from '@/lib/sync/run-market-sync';
+import { marketSyncDeps } from '@/lib/sync/market-deps';
 
 export async function POST() {
   const session = await auth();
@@ -27,10 +29,26 @@ export async function POST() {
     now: () => new Date(),
   });
 
+  // Market data is independent of Pierre: quotes, rates and news are worth
+  // refreshing even when the bank connections are down.
+  const market = await runMarketSync(marketSyncDeps());
+
   if (result.status !== 'error') {
-    revalidatePath('/visao-geral');
-    revalidatePath('/posicoes');
+    for (const path of [
+      '/visao-geral',
+      '/posicoes',
+      '/renda-fixa',
+      '/cripto',
+      '/acoes',
+      '/noticias',
+      '/ferramentas',
+    ]) {
+      revalidatePath(path);
+    }
   }
 
-  return NextResponse.json(result, { status: result.status === 'error' ? 500 : 200 });
+  return NextResponse.json(
+    { ...result, market },
+    { status: result.status === 'error' ? 500 : 200 },
+  );
 }

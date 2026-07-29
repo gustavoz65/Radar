@@ -1,9 +1,9 @@
 import 'server-only';
 import { listAccounts } from '@/lib/repositories/accounts';
+import { latestQuotes, latestRates, listNews } from '@/lib/repositories/market';
 import { listPortfolioHistory, listPositions } from '@/lib/repositories/positions';
 import { lastSync, lastSyncWithData } from '@/lib/repositories/sync-log';
-import { news } from './fixtures/news';
-import { marketRates } from './fixtures/rates';
+import { effectiveAnnualRate } from '@/lib/market/rates';
 import { signals } from './fixtures/signals';
 import type {
   Account,
@@ -14,6 +14,7 @@ import type {
   MarketRates,
   NewsItem,
   PortfolioSummary,
+  Position,
   Signal,
   SyncStatus,
 } from '@/lib/types';
@@ -21,32 +22,71 @@ import type {
 /**
  * The only module UI components read data from.
  *
- * Accounts and positions are real (sub-project 2). Signals, news and market
- * rates are still fixtures — they belong to sub-projects 3 and 4. When those
- * land, only the bodies below change; no component is touched.
+ * Everything here is real except signals, which belong to sub-project 4.
  */
 
 export async function getAccounts(): Promise<Account[]> {
   return listAccounts();
 }
 
+/**
+ * Positions priced with the latest market quote.
+ *
+ * A manually entered unit value is what the user paid attention to once; the
+ * quote is what the holding is worth now, so it wins wherever we have one.
+ */
+async function pricedPositions(): Promise<Position[]> {
+  const [positions, rates, crypto, equities] = await Promise.all([
+    listPositions(),
+    latestRates(),
+    latestQuotes('cripto'),
+    latestQuotes('acoes'),
+  ]);
+
+  return positions.map((position) => {
+    if (position.assetClass === 'rendaFixa') {
+      return { ...position, effectiveAnnualRate: effectiveAnnualRate(position.rateLabel, rates) };
+    }
+
+    if (position.assetClass === 'cripto') {
+      const quote = crypto.get(position.symbol.toUpperCase());
+      if (!quote) return position;
+      return {
+        ...position,
+        priceBrl: quote.priceBrl,
+        change24h: quote.changePercent ?? 0,
+        currentValue: Number((position.quantity * quote.priceBrl).toFixed(2)),
+      };
+    }
+
+    const quote = equities.get(position.ticker.toUpperCase());
+    if (!quote) return position;
+    return {
+      ...position,
+      price: quote.priceBrl,
+      changeDay: quote.changePercent ?? 0,
+      currentValue: Number((position.quantity * quote.priceBrl).toFixed(2)),
+    };
+  });
+}
+
 export async function getFixedIncomePositions(): Promise<FixedIncomePosition[]> {
-  const positions = await listPositions();
+  const positions = await pricedPositions();
   return positions.filter((p): p is FixedIncomePosition => p.assetClass === 'rendaFixa');
 }
 
 export async function getCryptoPositions(): Promise<CryptoPosition[]> {
-  const positions = await listPositions();
+  const positions = await pricedPositions();
   return positions.filter((p): p is CryptoPosition => p.assetClass === 'cripto');
 }
 
 export async function getEquityPositions(): Promise<EquityPosition[]> {
-  const positions = await listPositions();
+  const positions = await pricedPositions();
   return positions.filter((p): p is EquityPosition => p.assetClass === 'acoes');
 }
 
 export async function getPortfolioSummary(): Promise<PortfolioSummary> {
-  const [positions, history] = await Promise.all([listPositions(), listPortfolioHistory()]);
+  const [positions, history] = await Promise.all([pricedPositions(), listPortfolioHistory()]);
 
   const sumFor = (assetClass: string) =>
     Number(
@@ -89,14 +129,7 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
       ? 0
       : Math.round(signals.reduce((sum, signal) => sum + signal.score, 0) / signals.length);
 
-  return {
-    totalValue,
-    dayChangeValue,
-    dayChangePercent,
-    allocation,
-    history,
-    averageScore,
-  };
+  return { totalValue, dayChangeValue, dayChangePercent, allocation, history, averageScore };
 }
 
 /** Last sync attempt plus when data last landed, so a failure warns without blanking the screen. */
@@ -121,14 +154,11 @@ export async function getSignalById(id: string): Promise<Signal | null> {
   return signals.find((signal) => signal.id === id) ?? null;
 }
 
-/** Still mocked — sub-project 3 replaces this body. */
 export async function getNews(): Promise<NewsItem[]> {
-  return [...news].sort(
-    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  return listNews();
 }
 
-/** Still mocked — sub-project 3 replaces this body. */
-export async function getMarketRates(): Promise<MarketRates> {
-  return marketRates;
+/** Null until the first market sync collects the BCB series. */
+export async function getMarketRates(): Promise<MarketRates | null> {
+  return latestRates();
 }

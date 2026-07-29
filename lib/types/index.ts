@@ -96,7 +96,8 @@ export interface Signal {
   updatedAt: string; // ISO datetime
 }
 
-export type NewsCategory = 'selic' | 'cripto' | 'acoes' | 'bancos';
+/** `mercado` is the honest bucket for articles no keyword claims — never a silent 'acoes'. */
+export type NewsCategory = 'selic' | 'cripto' | 'acoes' | 'bancos' | 'mercado';
 
 export interface NewsItem {
   id: string;

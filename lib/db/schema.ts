@@ -97,6 +97,62 @@ export const positionSnapshots = mysqlTable(
   (table) => [index('position_snapshot_captured_at_idx').on(table.capturedAt)],
 );
 
+/** Economic indicators from the BCB, one row per published reference date. */
+export const economicIndicators = mysqlTable(
+  'economic_indicator',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    series: mysqlEnum('series', ['selic', 'cdi', 'ipca12m', 'poupanca']).notNull(),
+    /** Annual percentage, e.g. 14.25. */
+    value: decimal('value', { precision: 10, scale: 4 }).notNull(),
+    referenceDate: datetime('reference_date').notNull(),
+    collectedAt: datetime('collected_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('economic_indicator_series_date_idx').on(table.series, table.referenceDate),
+  ],
+);
+
+/**
+ * Quotes, append-only: each collection adds a row, so the history charts come
+ * from the same table the current price is read from.
+ */
+export const marketPrices = mysqlTable(
+  'market_price',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    assetClass: mysqlEnum('asset_class', ['cripto', 'acoes']).notNull(),
+    ticker: varchar('ticker', { length: 32 }).notNull(),
+    priceBrl: decimal('price_brl', { precision: 20, scale: 8 }).notNull(),
+    /** 24h change for crypto, day change for equities. Null when the source omits it. */
+    changePercent: decimal('change_percent', { precision: 10, scale: 4 }),
+    collectedAt: datetime('collected_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('market_price_ticker_collected_idx').on(table.ticker, table.collectedAt),
+    index('market_price_class_idx').on(table.assetClass),
+  ],
+);
+
+export const newsItems = mysqlTable(
+  'news_item',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    /** The article URL, which is what dedupes across feeds. */
+    externalId: varchar('external_id', { length: 512 }).notNull(),
+    title: varchar('title', { length: 512 }).notNull(),
+    source: varchar('source', { length: 128 }).notNull(),
+    url: varchar('url', { length: 512 }).notNull(),
+    publishedAt: datetime('published_at').notNull(),
+    category: mysqlEnum('category', ['selic', 'cripto', 'acoes', 'bancos', 'mercado']).notNull(),
+    summary: text('summary'),
+  },
+  (table) => [
+    uniqueIndex('news_item_external_id_idx').on(table.externalId),
+    index('news_item_published_idx').on(table.publishedAt),
+  ],
+);
+
 /** Audit trail for every sync attempt, successful or not. */
 export const syncLogs = mysqlTable('sync_log', {
   id: int('id').primaryKey().autoincrement(),

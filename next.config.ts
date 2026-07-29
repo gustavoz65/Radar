@@ -2,6 +2,11 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ccxt is a multi-megabyte CJS/ESM hybrid over node builtins. Bundling it
+  // corrupts the whole webpack graph — every client chunk then dies with
+  // "__webpack_require__.n is not a function" — so it is required at runtime on
+  // the server instead.
+  serverExternalPackages: ['ccxt'],
   // `next build` and `next dev` both own `.next/`, so a build run while the dev
   // server is up overwrites the chunks the open browser tab is still asking for
   // and the page renders with no CSS. `npm run build:check` sets this to a

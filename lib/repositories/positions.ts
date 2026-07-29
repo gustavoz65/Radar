@@ -204,6 +204,25 @@ export async function upsertSyncedPositions(
   return positions.length;
 }
 
+/** The symbols worth quoting: there is no point pricing assets nobody holds. */
+export async function heldAssets(): Promise<{ crypto: string[]; equities: string[] }> {
+  const rows = await db
+    .select({ assetClass: investmentPositions.assetClass, ticker: investmentPositions.ticker })
+    .from(investmentPositions);
+
+  const crypto = new Set<string>();
+  const equities = new Set<string>();
+
+  for (const row of rows) {
+    const ticker = row.ticker?.trim().toUpperCase();
+    if (!ticker) continue;
+    if (row.assetClass === 'cripto') crypto.add(ticker);
+    if (row.assetClass === 'acoes') equities.add(ticker);
+  }
+
+  return { crypto: [...crypto], equities: [...equities] };
+}
+
 /** Writes one snapshot row per position at a single capture instant. */
 export async function snapshotPositions(capturedAt: Date): Promise<void> {
   const rows = await db.select().from(investmentPositions);

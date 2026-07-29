@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '@/lib/db/client';
-import { bankAccounts, investmentPositions, positionSnapshots, syncLogs } from '@/lib/db/schema';
+import {
+  bankAccounts,
+  economicIndicators,
+  investmentPositions,
+  newsItems,
+  positionSnapshots,
+  syncLogs,
+} from '@/lib/db/schema';
+import { saveIndicators, saveNews } from '@/lib/repositories/market';
 import { createPosition, snapshotPositions } from '@/lib/repositories/positions';
 import { upsertAccounts } from '@/lib/repositories/accounts';
 import { finishSync, startSync } from '@/lib/repositories/sync-log';
@@ -176,28 +184,72 @@ describeDb('services over a real database', () => {
   });
 });
 
-describe('services still backed by fixtures', () => {
-  it('still returns mocked signals until sub-project 4 exists', async () => {
+describe('market data services', () => {
+  beforeEach(async () => {
+    await db.delete(economicIndicators);
+    await db.delete(newsItems);
+  });
+
+  afterEach(async () => {
+    await db.delete(economicIndicators);
+    await db.delete(newsItems);
+  });
+
+  it('reports no rates before the first market sync instead of inventing zeros', async () => {
+    await expect(getMarketRates()).resolves.toBeNull();
+  });
+
+  it('returns the collected rates once they exist', async () => {
+    await saveIndicators(
+      [
+        { series: 'selic', value: 14.25, referenceDate: new Date('2026-08-05T00:00:00.000Z') },
+        { series: 'cdi', value: 14.15, referenceDate: new Date('2026-07-01T00:00:00.000Z') },
+      ],
+      new Date('2026-07-28T12:00:00.000Z'),
+    );
+
+    const rates = await getMarketRates();
+    expect(rates?.selic).toBe(14.25);
+    expect(rates?.cdi).toBe(14.15);
+  });
+
+  it('returns news newest first', async () => {
+    await saveNews([
+      {
+        externalId: 'https://example.com/a',
+        title: 'Copom mantém a Selic',
+        source: 'InfoMoney',
+        url: 'https://example.com/a',
+        publishedAt: new Date('2026-07-20T10:00:00.000Z'),
+        category: 'selic',
+        summary: null,
+      },
+      {
+        externalId: 'https://example.com/b',
+        title: 'Bitcoin sobe',
+        source: 'InfoMoney',
+        url: 'https://example.com/b',
+        publishedAt: new Date('2026-07-27T10:00:00.000Z'),
+        category: 'cripto',
+        summary: null,
+      },
+    ]);
+
+    const news = await getNews();
+    expect(news.map((item) => item.title)).toEqual(['Bitcoin sobe', 'Copom mantém a Selic']);
+  });
+});
+
+describe('signals, still the only fixture', () => {
+  it('returns mocked signals until sub-project 4 exists', async () => {
     const signals = await getSignals();
     expect(signals.length).toBeGreaterThan(0);
     expect(signals.every((signal) => signal.factors.length >= 2)).toBe(true);
     expect(signals.every((signal) => signal.disclaimer.trim().length > 0)).toBe(true);
   });
 
-  it('still resolves a signal by id', async () => {
+  it('resolves a signal by id', async () => {
     const [first] = await getSignals();
     await expect(getSignalById(first.id)).resolves.toEqual(first);
-  });
-
-  it('still returns mocked news newest first', async () => {
-    const news = await getNews();
-    const times = news.map((item) => new Date(item.publishedAt).getTime());
-    expect(times).toEqual([...times].sort((a, b) => b - a));
-  });
-
-  it('still returns the july 2026 rate anchors', async () => {
-    const rates = await getMarketRates();
-    expect(rates.selic).toBe(14.25);
-    expect(rates.cdi).toBe(14.15);
   });
 });

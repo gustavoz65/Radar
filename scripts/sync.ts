@@ -50,6 +50,16 @@ async function main() {
   console.log(`transactions: ${result.transactions}`);
   if (result.error) console.log(`note:         ${result.error}`);
 
+  const { runMarketSync } = await import('@/lib/sync/run-market-sync');
+  const { marketSyncDeps } = await import('@/lib/sync/market-deps');
+  const market = await runMarketSync(marketSyncDeps());
+
+  console.log(
+    `\nmercado: ${market.indicators} indicadores, ${market.cryptoQuotes} cripto, ` +
+      `${market.equityQuotes} ações, ${market.news} notícias`,
+  );
+  for (const failure of market.failures) console.log(`  falha: ${failure}`);
+
   const accounts = await listAccounts();
   console.log(`\n${accounts.length} accounts in the database:`);
   for (const account of accounts) {

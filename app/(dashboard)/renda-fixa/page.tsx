@@ -42,22 +42,34 @@ export default async function RendaFixaPage() {
       ? null
       : priced.reduce((sum, p) => sum + p.effectiveAnnualRate * p.currentValue, 0) / pricedTotal;
 
+  // Reference bars only when the BCB series have been collected; a 0% CDI bar
+  // would be a claim about the economy, not a missing value.
+  const benchmarks: ComparisonBar[] = rates
+    ? [
+        { label: 'CDI', value: rates.cdi },
+        { label: 'Selic', value: rates.selic },
+        { label: 'Poupança', value: rates.poupanca },
+      ]
+    : [];
+
   const comparison: ComparisonBar[] = [
     ...priced.map((position) => ({
       label: position.name,
       value: position.effectiveAnnualRate,
       highlight: true,
     })),
-    { label: 'CDI', value: rates.cdi },
-    { label: 'Selic', value: rates.selic },
-    { label: 'Poupança', value: rates.poupanca },
+    ...benchmarks,
   ].sort((a, b) => b.value - a.value);
 
   return (
     <div className="space-y-8">
       <SectionHeader
         title="Renda fixa"
-        description={`Comparação frente aos indicadores de referência — Selic ${formatPercent(rates.selic)} a.a. e CDI ${formatPercent(rates.cdi)} a.a.`}
+        description={
+          rates
+            ? `Comparação frente aos indicadores de referência — Selic ${formatPercent(rates.selic)} a.a. e CDI ${formatPercent(rates.cdi)} a.a.`
+            : 'Atualize para trazer Selic e CDI do Banco Central e comparar sua carteira.'
+        }
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,0 +1,1 @@
+ALTER TABLE `news_item` MODIFY COLUMN `category` enum('selic','cripto','acoes','bancos','mercado') NOT NULL;

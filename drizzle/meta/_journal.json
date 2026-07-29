@@ -22,6 +22,20 @@
       "when": 1785198007025,
       "tag": "0002_odd_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1785282680485,
+      "tag": "0003_windy_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1785283127253,
+      "tag": "0004_brown_mentor",
+      "breakpoints": true
     }
   ]
 }

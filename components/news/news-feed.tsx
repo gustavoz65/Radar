@@ -16,6 +16,7 @@ const filters: { value: Filter; label: string }[] = [
   { value: 'cripto', label: 'Cripto' },
   { value: 'acoes', label: 'Ações' },
   { value: 'bancos', label: 'Bancos' },
+  { value: 'mercado', label: 'Mercado' },
 ];
 
 const categoryLabels: Record<NewsCategory, string> = {
@@ -23,6 +24,7 @@ const categoryLabels: Record<NewsCategory, string> = {
   cripto: 'Cripto',
   acoes: 'Ações',
   bancos: 'Bancos',
+  mercado: 'Mercado',
 };
 
 export function NewsFeed({ items }: { items: NewsItem[] }) {
