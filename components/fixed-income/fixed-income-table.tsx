@@ -58,13 +58,18 @@ const columns: Column<FixedIncomePosition>[] = [
     key: 'return',
     header: 'Rentabilidade',
     align: 'right',
-    cell: (row) => (
-      <TrendValue
-        value={percentChange(row.investedValue, row.currentValue)}
-        format="percent"
-        className="text-sm"
-      />
-    ),
+    // A synced caixinha has no deposit history, so its return is unknown rather
+    // than zero — and "0,00%" would read as a confident "rendeu nada".
+    cell: (row) =>
+      row.source === 'pierre' ? (
+        <span className="text-sm text-muted">—</span>
+      ) : (
+        <TrendValue
+          value={percentChange(row.investedValue, row.currentValue)}
+          format="percent"
+          className="text-sm"
+        />
+      ),
   },
 ];
 

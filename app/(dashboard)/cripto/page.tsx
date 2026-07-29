@@ -16,7 +16,7 @@ export default async function CriptoPage() {
         <SectionHeader title="Cripto" />
         <EmptyState
           title="Nenhuma posição em cripto por enquanto"
-          description="Quando um ativo digital aparecer nas contas conectadas, o histórico de preço e a variação entram aqui."
+          description="A Pierre não expõe carteira de investimentos, então cripto é cadastrada em Posições. Depois disso a cotação em BRL e a variação de 24h passam a ser buscadas a cada atualização."
         />
       </div>
     );

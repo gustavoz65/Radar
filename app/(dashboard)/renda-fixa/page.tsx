@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { FixedIncomeTable } from '@/components/fixed-income/fixed-income-table';
 import { formatBRL } from '@/lib/format/money';
 import { formatPercent, percentChange } from '@/lib/format/percent';
+import { formatDateTime } from '@/lib/format/date';
 import { getFixedIncomePositions, getMarketRates } from '@/lib/data/services';
 import { SubsectionTitle } from '@/components/common/typography';
 import { surfaceCardClass } from '@/components/common/surface';
@@ -26,7 +27,14 @@ export default async function RendaFixaPage() {
   }
 
   const total = positions.reduce((sum, position) => sum + position.currentValue, 0);
-  const invested = positions.reduce((sum, position) => sum + position.investedValue, 0);
+
+  // Only manual positions carry a real cost basis. A synced caixinha reports
+  // what it holds today, never what was deposited, so counting it would render
+  // a confident "R$ 0,00 / 0,00%" for a return nobody knows.
+  const withCostBasis = positions.filter((position) => position.source === 'manual');
+  const investedKnown = withCostBasis.reduce((sum, position) => sum + position.investedValue, 0);
+  const currentKnown = withCostBasis.reduce((sum, position) => sum + position.currentValue, 0);
+  const hasCostBasis = withCostBasis.length > 0;
 
   // Only titles Radar can actually price take part in the average and the chart.
   // A synced caixinha knows its contracted rate ("120% do CDI") but not the
@@ -67,7 +75,7 @@ export default async function RendaFixaPage() {
         title="Renda fixa"
         description={
           rates
-            ? `Comparação frente aos indicadores de referência — Selic ${formatPercent(rates.selic)} a.a. e CDI ${formatPercent(rates.cdi)} a.a.`
+            ? `Selic ${formatPercent(rates.selic)} a.a. (meta do Copom) e CDI ${formatPercent(rates.cdi)} a.a. (acumulado 12 meses), do Banco Central em ${formatDateTime(rates.updatedAt)}.`
             : 'Atualize para trazer Selic e CDI do Banco Central e comparar sua carteira.'
         }
       />
@@ -76,8 +84,14 @@ export default async function RendaFixaPage() {
         <StatCard label="Total em renda fixa" value={formatBRL(total)} />
         <StatCard
           label="Rentabilidade acumulada"
-          value={formatBRL(total - invested)}
-          hint={<TrendValue value={percentChange(invested, total)} format="percent" />}
+          value={hasCostBasis ? formatBRL(currentKnown - investedKnown) : '—'}
+          hint={
+            hasCostBasis ? (
+              <TrendValue value={percentChange(investedKnown, currentKnown)} format="percent" />
+            ) : (
+              <span className="text-muted">A Pierre não informa quanto foi depositado</span>
+            )
+          }
         />
         <StatCard
           label="Taxa média ponderada"

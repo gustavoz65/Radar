@@ -16,7 +16,7 @@ export default async function AcoesPage() {
         <SectionHeader title="Ações e FIIs" />
         <EmptyState
           title="Nenhuma posição em renda variável ainda"
-          description="Ações e fundos imobiliários das contas conectadas aparecem aqui com desempenho e dividend yield."
+          description="A Pierre não expõe carteira de investimentos, então ações e FIIs são cadastrados em Posições. Depois disso a cotação da B3 passa a ser buscada a cada atualização."
         />
       </div>
     );
