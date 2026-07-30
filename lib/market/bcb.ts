@@ -53,35 +53,50 @@ function annualiseMonthly(monthlyPercent: number): number {
   return Number(annual.toFixed(4));
 }
 
-export function parseIndicator(series: IndicatorSeries, payload: unknown): IndicatorReading {
+/** How many past values to keep, so the scoring engine can read a trend from day one. */
+const HISTORY_POINTS = 8;
+
+export function parseIndicatorSeries(
+  series: IndicatorSeries,
+  payload: unknown,
+): IndicatorReading[] {
   const parsed = sgsResponse.safeParse(payload);
   if (!parsed.success) {
     throw new BcbError(series, 'resposta fora do formato esperado');
   }
 
-  const latest = parsed.data[parsed.data.length - 1];
-  const value = Number(latest.valor);
-  const referenceDate = parseSgsDate(latest.data);
+  return parsed.data.map((entry) => {
+    const value = Number(entry.valor);
+    const referenceDate = parseSgsDate(entry.data);
 
-  if (!Number.isFinite(value)) throw new BcbError(series, `valor inválido "${latest.valor}"`);
-  if (!referenceDate) throw new BcbError(series, `data inválida "${latest.data}"`);
+    if (!Number.isFinite(value)) throw new BcbError(series, `valor inválido "${entry.valor}"`);
+    if (!referenceDate) throw new BcbError(series, `data inválida "${entry.data}"`);
 
-  return {
-    series,
-    value: series === 'poupanca' ? annualiseMonthly(value) : value,
-    referenceDate,
-  };
+    return {
+      series,
+      value: series === 'poupanca' ? annualiseMonthly(value) : value,
+      referenceDate,
+    };
+  });
 }
 
-async function fetchSeries(series: IndicatorSeries): Promise<IndicatorReading> {
+/** The most recent reading of a series. */
+export function parseIndicator(series: IndicatorSeries, payload: unknown): IndicatorReading {
+  const readings = parseIndicatorSeries(series, payload);
+  const latest = readings.at(-1);
+  if (!latest) throw new BcbError(series, 'série vazia');
+  return latest;
+}
+
+async function fetchSeries(series: IndicatorSeries): Promise<IndicatorReading[]> {
   const code = SERIES_CODE[series];
   let response: Response;
 
   try {
-    response = await fetch(`${BASE_URL}/bcdata.sgs.${code}/dados/ultimos/1?formato=json`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    });
+    response = await fetch(
+      `${BASE_URL}/bcdata.sgs.${code}/dados/ultimos/${HISTORY_POINTS}?formato=json`,
+      { headers: { Accept: 'application/json' }, cache: 'no-store' },
+    );
   } catch {
     throw new BcbError(series, 'não foi possível alcançar o BCB');
   }
@@ -95,7 +110,7 @@ async function fetchSeries(series: IndicatorSeries): Promise<IndicatorReading> {
     throw new BcbError(series, 'a resposta não é JSON válido');
   }
 
-  return parseIndicator(series, payload);
+  return parseIndicatorSeries(series, payload);
 }
 
 /**
@@ -114,7 +129,7 @@ export async function fetchIndicators(): Promise<{
   const failures: string[] = [];
 
   for (const result of settled) {
-    if (result.status === 'fulfilled') readings.push(result.value);
+    if (result.status === 'fulfilled') readings.push(...result.value);
     else
       failures.push(result.reason instanceof Error ? result.reason.message : 'erro desconhecido');
   }

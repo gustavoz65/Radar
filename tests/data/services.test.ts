@@ -6,12 +6,16 @@ import {
   investmentPositions,
   newsItems,
   positionSnapshots,
+  signalFactors,
+  signalRecords,
   syncLogs,
 } from '@/lib/db/schema';
 import { saveIndicators, saveNews } from '@/lib/repositories/market';
 import { createPosition, snapshotPositions } from '@/lib/repositories/positions';
 import { upsertAccounts } from '@/lib/repositories/accounts';
 import { finishSync, startSync } from '@/lib/repositories/sync-log';
+import { saveSignals } from '@/lib/repositories/signals';
+import { DISCLAIMER } from '@/lib/scoring/run-scoring';
 import {
   getAccounts,
   getCryptoPositions,
@@ -240,16 +244,71 @@ describe('market data services', () => {
   });
 });
 
-describe('signals, still the only fixture', () => {
-  it('returns mocked signals until sub-project 4 exists', async () => {
-    const signals = await getSignals();
-    expect(signals.length).toBeGreaterThan(0);
-    expect(signals.every((signal) => signal.factors.length >= 2)).toBe(true);
-    expect(signals.every((signal) => signal.disclaimer.trim().length > 0)).toBe(true);
+describeDb('signals from the scoring engine', () => {
+  beforeEach(async () => {
+    await db.delete(signalFactors);
+    await db.delete(signalRecords);
+  });
+
+  afterEach(async () => {
+    await db.delete(signalFactors);
+    await db.delete(signalRecords);
+  });
+
+  it('has no signals before the first scoring run', async () => {
+    await expect(getSignals()).resolves.toEqual([]);
+  });
+
+  it('returns a stored signal with its breakdown and disclaimer', async () => {
+    await saveSignals(
+      [
+        {
+          positionId: 42,
+          assetClass: 'rendaFixa',
+          score: 71,
+          formulaVersion: 'rf-1',
+          title: 'Rende acima do CDI',
+          summary: 'Cenário favorável a pós-fixados.',
+          disclaimer: DISCLAIMER,
+          factors: [
+            { label: 'Rende 120% do CDI', direction: 'positive', weight: 70 },
+            { label: 'Selic estável', direction: 'neutral', weight: 30 },
+          ],
+        },
+      ],
+      new Date('2026-07-28T12:00:00.000Z'),
+    );
+
+    const [signal] = await getSignals();
+    expect(signal.score).toBe(71);
+    // CLAUDE.md: never a black box, always a disclaimer.
+    expect(signal.factors).toHaveLength(2);
+    expect(signal.disclaimer).toBe(DISCLAIMER);
   });
 
   it('resolves a signal by id', async () => {
+    await saveSignals(
+      [
+        {
+          positionId: 42,
+          assetClass: 'rendaFixa',
+          score: 71,
+          formulaVersion: 'rf-1',
+          title: 'Rende acima do CDI',
+          summary: 'Cenário favorável.',
+          disclaimer: DISCLAIMER,
+          factors: [{ label: 'Rende 120% do CDI', direction: 'positive', weight: 70 }],
+        },
+      ],
+      new Date('2026-07-28T12:00:00.000Z'),
+    );
+
     const [first] = await getSignals();
     await expect(getSignalById(first.id)).resolves.toEqual(first);
+  });
+
+  it('returns null for an id that does not exist', async () => {
+    await expect(getSignalById('9999')).resolves.toBeNull();
+    await expect(getSignalById('não-numérico')).resolves.toBeNull();
   });
 });

@@ -60,6 +60,15 @@ async function main() {
   );
   for (const failure of market.failures) console.log(`  falha: ${failure}`);
 
+  const { runScoring } = await import('@/lib/scoring/run-scoring');
+  const { scoringDeps } = await import('@/lib/scoring/scoring-deps');
+  const scoring = await runScoring(scoringDeps());
+
+  console.log(
+    `\nsinais: ${scoring.scored} calculados, texto da IA ${scoring.explained ? 'ok' : 'indisponível'}`,
+  );
+  for (const skip of scoring.skipped) console.log(`  sem score: ${skip}`);
+
   const accounts = await listAccounts();
   console.log(`\n${accounts.length} accounts in the database:`);
   for (const account of accounts) {

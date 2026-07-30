@@ -75,6 +75,18 @@ export async function latestRates(): Promise<MarketRates | null> {
   };
 }
 
+/** A series oldest to newest, which is the order the trend factor expects. */
+export async function indicatorHistory(series: IndicatorSeries, limit = 8): Promise<number[]> {
+  const rows = await db
+    .select({ value: economicIndicators.value })
+    .from(economicIndicators)
+    .where(eq(economicIndicators.series, series))
+    .orderBy(desc(economicIndicators.referenceDate))
+    .limit(limit);
+
+  return rows.map((row) => toNumber(row.value)).reverse();
+}
+
 export async function saveQuotes(
   assetClass: 'cripto' | 'acoes',
   quotes: Quote[],

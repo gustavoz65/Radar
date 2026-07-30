@@ -153,6 +153,44 @@ export const newsItems = mysqlTable(
   ],
 );
 
+/**
+ * Confidence signals. The score comes from the versioned formula in
+ * `lib/scoring/`; the LLM only supplies title and summary.
+ */
+// Not named `signal`: that is a reserved word in MySQL 8, so every raw query
+// against it needs backticks to parse.
+export const signalRecords = mysqlTable(
+  'confidence_signal',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    /** The position the signal is about, so a re-score updates instead of duplicating. */
+    positionId: int('position_id').notNull(),
+    assetClass: mysqlEnum('asset_class', ['rendaFixa', 'cripto', 'acoes']).notNull(),
+    score: int('score').notNull(),
+    /** Which formula produced the score, e.g. 'rf-1'. */
+    formulaVersion: varchar('formula_version', { length: 32 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    summary: text('summary').notNull(),
+    disclaimer: varchar('disclaimer', { length: 255 }).notNull(),
+    updatedAt: datetime('updated_at').notNull(),
+  },
+  (table) => [uniqueIndex('signal_position_idx').on(table.positionId)],
+);
+
+/** The visible breakdown; a signal without factors would be a black box. */
+export const signalFactors = mysqlTable(
+  'confidence_signal_factor',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    signalId: int('signal_id').notNull(),
+    label: varchar('label', { length: 255 }).notNull(),
+    direction: mysqlEnum('direction', ['positive', 'negative', 'neutral']).notNull(),
+    weight: int('weight').notNull(),
+    position: int('position').notNull(),
+  },
+  (table) => [index('signal_factor_signal_idx').on(table.signalId)],
+);
+
 /** Audit trail for every sync attempt, successful or not. */
 export const syncLogs = mysqlTable('sync_log', {
   id: int('id').primaryKey().autoincrement(),

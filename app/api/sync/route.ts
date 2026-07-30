@@ -8,6 +8,8 @@ import { finishSync, lastSuccessfulSync, startSync } from '@/lib/repositories/sy
 import { runSync } from '@/lib/sync/run-sync';
 import { runMarketSync } from '@/lib/sync/run-market-sync';
 import { marketSyncDeps } from '@/lib/sync/market-deps';
+import { runScoring } from '@/lib/scoring/run-scoring';
+import { scoringDeps } from '@/lib/scoring/scoring-deps';
 
 export async function POST() {
   const session = await auth();
@@ -33,6 +35,9 @@ export async function POST() {
   // refreshing even when the bank connections are down.
   const market = await runMarketSync(marketSyncDeps());
 
+  // Scoring runs last: it reads the rates and news the two syncs just wrote.
+  const scoring = await runScoring(scoringDeps());
+
   if (result.status !== 'error') {
     for (const path of [
       '/visao-geral',
@@ -48,7 +53,7 @@ export async function POST() {
   }
 
   return NextResponse.json(
-    { ...result, market },
+    { ...result, market, scoring },
     { status: result.status === 'error' ? 500 : 200 },
   );
 }

@@ -2,9 +2,9 @@ import 'server-only';
 import { listAccounts } from '@/lib/repositories/accounts';
 import { latestQuotes, latestRates, listNews, listQuotes } from '@/lib/repositories/market';
 import { listPortfolioHistory, listPositions } from '@/lib/repositories/positions';
+import { findSignal, listSignals } from '@/lib/repositories/signals';
 import { lastSync, lastSyncWithData } from '@/lib/repositories/sync-log';
 import { effectiveAnnualRate } from '@/lib/market/rates';
-import { signals } from './fixtures/signals';
 import type {
   Account,
   AllocationSlice,
@@ -87,7 +87,11 @@ export async function getEquityPositions(): Promise<EquityPosition[]> {
 }
 
 export async function getPortfolioSummary(): Promise<PortfolioSummary> {
-  const [positions, history] = await Promise.all([pricedPositions(), listPortfolioHistory()]);
+  const [positions, history, signals] = await Promise.all([
+    pricedPositions(),
+    listPortfolioHistory(),
+    listSignals(),
+  ]);
 
   const sumFor = (assetClass: string) =>
     Number(
@@ -145,14 +149,12 @@ export async function getSyncStatus(): Promise<SyncStatus> {
   };
 }
 
-/** Still mocked — sub-project 4 replaces this body. */
 export async function getSignals(): Promise<Signal[]> {
-  return signals;
+  return listSignals();
 }
 
-/** Still mocked — sub-project 4 replaces this body. */
 export async function getSignalById(id: string): Promise<Signal | null> {
-  return signals.find((signal) => signal.id === id) ?? null;
+  return findSignal(id);
 }
 
 export async function getNews(): Promise<NewsItem[]> {
