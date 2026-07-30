@@ -25,7 +25,10 @@ transição a ser removido, não contexto a seguir.
 
 Quatro sub-projetos independentes, cada um com sua própria spec e plano:
 
-1. **Frontend / dashboard** — Next.js, dados mocados. **Construído** (7 abas, plano em
+Quatro sub-projetos, **todos construídos**. Não há mais nenhum dado mocado no app:
+`lib/data/fixtures/` foi apagado.
+
+1. **Frontend / dashboard** — Next.js. **Construído** (8 abas, plano em
    `docs/superpowers/plans/2026-07-26-radar-frontend-mvp.md`).
 2. Integração Open Finance real (Pierre — app da CloudWalk; o nome NÃO é "Pier").
    **Construído e puxando dados reais.** Contas, cartões, transações e "caixinhas" vêm do
@@ -33,19 +36,26 @@ Quatro sub-projetos independentes, cada um com sua própria spec e plano:
    errada** — `get-accounts` usa `id`/`name`/`type`, `balance` como string, e identifica o
    banco por `connectorName`. Os schemas Zod em `lib/pierre/dto.ts` foram escritos contra
    respostas ao vivo; não "corrija" para o formato documentado.
-3. Ingestão de dados de mercado (cripto, ações, CDI/Selic, notícias). Ainda não iniciado.
-4. Motor de análise probabilística (IA / score de confiança). Ainda não iniciado.
+3. **Ingestão de dados de mercado. Construído.** Selic/CDI/IPCA/poupança do **BCB SGS**
+   (séries 432 e 4392 são as anuais; 11 e 12 são as diárias e **não** servem), cripto em
+   BRL via **CCXT/Binance**, ações da B3 via **brapi** (plano grátis aceita **1 ticker por
+   requisição**), notícias por RSS do InfoMoney e Investing.com. Cripto e ações cotam uma
+   **watchlist** (`lib/market/watchlist.ts`), não só o que o usuário tem — as abas servem
+   para decidir compra.
+4. **Motor de score de confiança. Construído** (piloto só de renda fixa, como a spec
+   define). Fórmula determinística versionada em `lib/scoring/fixed-income.ts`; a IA
+   (Nemotron via `build.nvidia.com`) só escreve título e resumo.
 
-Toda leitura de dados passa por `lib/data/services.ts` — inclusive status de sync. Hoje
-contas, posições e histórico vêm do MySQL; sinais, notícias e taxas ainda são fixtures,
-porque pertencem aos itens 3 e 4. Nunca chame a Pierre, o banco ou um repositório direto
-de um componente, e nunca importe fixture dentro de componente. Enquanto os itens 3–4 não
-existirem, **não invente as integrações deles**.
+Toda leitura de dados passa por `lib/data/services.ts` — inclusive status de sync. Nunca
+chame a Pierre, uma API externa, o banco ou um repositório direto de um componente.
 
 ## Regras inegociáveis
 
 1. **Todo score de confiança precisa de breakdown visível dos fatores + disclaimer.**
-   Nunca uma caixa-preta, nunca uma recomendação direta de compra/venda.
+   Nunca uma caixa-preta, nunca uma recomendação direta de compra/venda. **O número sai
+   sempre da fórmula determinística, nunca de um LLM** — a IA não recebe o score no
+   prompt, justamente para não poder repeti-lo nem contradizê-lo, e o disclaimer é fixo
+   em código. Se a IA falhar, score e fatores continuam sendo salvos e exibidos.
 2. **A cor de assinatura do score (`--signature-gold`) nunca é reaproveitada** para
    variação de preço (alta/baixa usam `--positive`/`--negative`). São conceitos
    diferentes e devem ser visualmente distintos. Classe de ativo é um terceiro conceito,
@@ -54,24 +64,32 @@ existirem, **não invente as integrações deles**.
 3. **Toda tela é responsiva de verdade** — desktop e mobile são adaptações de primeira
    classe do mesmo layout, revisadas juntas, nunca "desktop primeiro, mobile depois".
 4. **Sem chamada de rede direta em componente.** Toda leitura de dados passa por
-   `lib/data/services.ts` (funções async com a assinatura da futura API real). Nunca
-   importe fixtures diretamente num componente de UI.
-5. **Sem logos oficiais de banco.** Instituições mocadas usam badge com iniciais/cor
-   própria — evita qualquer dependência de asset de marca.
-6. **Dinheiro sempre formatado como BRL**; datas/horas tratadas como `Date`/ISO string
-   nos fixtures (sem fuso a resolver nesta fase — dados são mocados).
-7. **Nada de estilizar heading solto.** Todo título/label usa um degrau de
+   `lib/data/services.ts`, que compõe os repositórios. Componente não fala com banco,
+   com a Pierre, com a Binance nem com a brapi.
+5. **Sem logos oficiais de banco.** Instituições usam badge com iniciais/cor própria —
+   evita qualquer dependência de asset de marca.
+6. **Dinheiro sempre formatado como BRL.** Datas gravam em UTC: o pool do mysql2 usa
+   `timezone: 'Z'`, senão `DATETIME` volta deslocado e uma data pura (vencimento de
+   fatura) cai no dia errado.
+7. **Valor desconhecido é `—`, nunca `0`.** Zero é uma afirmação: "0% a.a." diz que não
+   rende, "R$ 0,00 de rentabilidade" diz que não lucrou. Quando o dado não existe (taxa
+   equivalente sem CDI coletado, custo de aquisição que a Pierre não informa), a tela diz
+   que não sabe.
+8. **Nada de estilizar heading solto.** Todo título/label usa um degrau de
    `components/common/typography.tsx` (`PanelTitle`/`SubsectionTitle`/`DataLabel`), e todo
    card usa `surfaceCardClass` de `components/common/surface.ts`. A tag (`h2`, `h3`) segue
    a hierarquia do documento; o peso visual vem do degrau, não da tag.
-8. **Conventional Commits**; commits pequenos.
-9. **Comentário é exceção, não hábito.** Clean code: o nome da função e do tipo carregam o
-   quê; comentário só entra quando explica um **porquê** que o código não consegue mostrar
-   — uma decisão contra-intuitiva, um bug de terceiro, um trade-off. Uma ou duas linhas.
-   Nunca parafraseie o que a linha abaixo já diz, nunca escreva parágrafo em bloco de
-   comentário, nunca deixe comentário de "histórico" (isso é trabalho do git log).
-   Se precisar de muitas linhas para explicar, o código provavelmente está errado.
-10. Sem multi-usuário e sem testes e2e nesta fase (specs 3-4 podem mudar isso).
+9. **Conventional Commits**; commits pequenos.
+10. **Comentário é exceção, não hábito.** Clean code: o nome da função e do tipo carregam o
+    quê; comentário só entra quando explica um **porquê** que o código não consegue mostrar
+    — uma decisão contra-intuitiva, um bug de terceiro, um trade-off. Uma ou duas linhas.
+    Nunca parafraseie o que a linha abaixo já diz, nunca escreva parágrafo em bloco de
+    comentário, nunca deixe comentário de "histórico" (isso é trabalho do git log).
+    Se precisar de muitas linhas para explicar, o código provavelmente está errado.
+11. **Antes de codar contra uma API externa, valide o contrato ao vivo.** A doc da Pierre
+    estava errada, a spec apontava as séries erradas do BCB, e a brapi só aceita 1 ticker
+    por requisição no plano grátis — os três só apareceram numa chamada real.
+12. Sem multi-usuário e sem testes e2e nesta fase.
 
 ## Comandos
 
@@ -89,33 +107,35 @@ existirem, **não invente as integrações deles**.
 - `npm run db:setup:test` — cria e migra o banco de teste (rodar uma vez após clonar)
 - `npm run sync` — dispara um sync real da Pierre pela CLI, sem precisar de sessão
 
-## Layout esperado do frontend
+## Layout
 
 ```
-app/                      # Next.js App Router — uma rota por aba
-  (dashboard)/
-    visao-geral/
-    renda-fixa/
-    cripto/
-    acoes/
-    sinais/
-    noticias/
-    ferramentas/
+app/
+  (dashboard)/              # uma rota por aba; force-dynamic no layout
+    visao-geral/ renda-fixa/ cripto/ acoes/ posicoes/ sinais/ noticias/ ferramentas/
+  api/                      # sync, positions — o BFF; nenhuma chave sai daqui
 components/
-  ui/                      # shadcn/ui
-  <feature>/                # componentes específicos de cada aba
+  ui/                       # shadcn/ui
+  <feature>/                # componentes de cada aba
 lib/
-  data/
-    fixtures/               # dados mocados
-    services.ts              # getPortfolioSummary(), getSignals(), getNews()...
-  types/                     # Account, Position, Signal, NewsItem...
+  data/services.ts          # ÚNICA porta de leitura da UI
+  db/                       # schema + pool Drizzle
+  repositories/             # acesso a tabela, um módulo por assunto
+  pierre/                   # cliente Open Finance (DTO Zod + mappers)
+  market/                   # bcb, crypto (ccxt), equities (brapi), news (rss), watchlist
+  scoring/                  # fórmula determinística + orquestração
+  ai/                       # nemotron: só escreve texto, nunca o score
+  cache/                    # Upstash, opcional e tolerante a falha
+  types/                    # Account, Position, Signal, MarketQuote...
+scripts/                    # sync CLI, setup do banco de teste
 ```
 
-## Como adicionar uma aba/módulo novo (receita)
+## Como adicionar um módulo novo (receita)
 
-1. Contrato de dados em `lib/types/` → fixture em `lib/data/fixtures/` → função em
-   `lib/data/services.ts` com latência simulada.
-2. Rota em `app/(dashboard)/<aba>/` com `loading.tsx` real (Suspense).
-3. Componentes em `components/<feature>/` reaproveitando tokens de design (cores,
-   Geist Sans/Mono, gauge dourado só para score de confiança).
-4. Se a aba expõe um `Signal`, o breakdown de fatores + disclaimer é obrigatório.
+1. Valide o contrato da fonte externa com uma chamada real antes de escrever schema.
+2. Contrato em `lib/types/` → parser puro em `lib/<fonte>/` com Zod na borda →
+   repositório em `lib/repositories/` → função em `lib/data/services.ts`.
+3. Rota em `app/(dashboard)/<aba>/` com `loading.tsx` real (Suspense).
+4. Teste o parser offline (fixture de resposta real no teste, nunca chamada de rede) e a
+   persistência contra `radar_test`.
+5. Se a aba expõe um `Signal`, o breakdown de fatores + disclaimer é obrigatório.

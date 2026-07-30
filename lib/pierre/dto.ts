@@ -1,14 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Thrown when Pierre's response does not match the contract.
- *
- * These schemas were originally transcribed from docs.pierre.finance and were
- * WRONG: the live `get-accounts` uses entirely different field names from the
- * documented ones (`id` not `accountId`, `connectorName` not `providerCode`, a
- * string `balance` not a numeric `accountBalance`). They have since been
- * rewritten against a real response. This error is how the next drift announces
- * itself instead of silently corrupting the database.
+ * Thrown when Pierre's response does not match these schemas, which were written
+ * against live responses because docs.pierre.finance documents different field
+ * names. This is how the next drift announces itself instead of corrupting data.
  */
 export class PierreContractError extends Error {
   constructor(
@@ -20,15 +15,6 @@ export class PierreContractError extends Error {
   }
 }
 
-/**
- * A live `get-accounts` row. Unknown extra fields are allowed — the real payload
- * carries a dozen more (itemId, taxNumber, creditData…) that Radar has no use
- * for, and Pierre may add others without notice.
- *
- * `balance` arrives as a decimal STRING here, while `get-balance` sends the same
- * figure as a number. Both are accepted so a change on either side does not
- * break the sync.
- */
 /**
  * How a reserved balance is remunerated, e.g. 119.9987% of the CDI.
  * `postFixedIndexerPercentage` is a ratio (1.199987), not a percentage.

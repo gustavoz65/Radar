@@ -26,9 +26,12 @@ O Radar é dividido em quatro sub-projetos independentes:
    "caixinhas" vêm do MySQL, alimentados por um sync sob demanda. Sinais, notícias e taxas
    continuam mocados até os sub-projetos 3 e 4.
 3. [Ingestão de dados de mercado](docs/superpowers/specs/2026-07-26-radar-market-data-design.md)
-   — ainda não iniciado.
-4. [Motor de análise / score de confiança](docs/superpowers/specs/2026-07-26-radar-ai-scoring-engine-design.md)
-   — ainda não iniciado.
+   — **construído.** Selic/CDI/IPCA/poupança do Banco Central, cripto em BRL via
+   CCXT/Binance, ações da B3 via brapi, notícias por RSS. Cripto e ações cotam uma
+   watchlist, não só o que você tem.
+4. [Motor de score de confiança](docs/superpowers/specs/2026-07-26-radar-ai-scoring-engine-design.md)
+   — **construído**, piloto de renda fixa. O número vem de uma fórmula determinística
+   versionada; a IA (Nemotron) só escreve o texto e nunca recebe o score.
 
 ## Como rodar
 
@@ -50,8 +53,15 @@ Preencha o `.env.local`:
 - `AUTH_USER_PASSWORD_HASH` — **use `node set-password.cjs 'sua-senha'`**, não cole um hash
   à mão. O `dotenv-expand` do Next trata `$2b$12$…` como expansão de variável e corrompe o
   valor silenciosamente; o script escapa cada `$` e verifica o resultado num processo novo.
-- `PIERRE_API_KEY` — chave em pierre.finance. Sem ela o app roda normalmente e só o botão
-  "Atualizar agora" falha, com mensagem clara.
+- `PIERRE_API_KEY` — chave em pierre.finance, para contas e transações bancárias.
+- `BRAPI` — token grátis em brapi.dev, para cotações da B3.
+- `NVIDIA_API_KEY` — chave em build.nvidia.com, para o texto dos sinais. Sem ela o score
+  ainda é calculado e exibido; só o resumo em prosa fica genérico.
+- `UPSTASH_REDIS_REST_URL` / `_TOKEN` — opcionais. Cacheiam as respostas da Pierre; deixe
+  vazias para manter saldos e transações fora de serviço de terceiro.
+
+Nada disso é obrigatório para o app subir: cada fonte que falta apenas deixa a sua parte
+da tela dizendo que o dado não foi coletado. O BCB e as notícias não pedem chave nenhuma.
 
 ```bash
 npm run dev                   # http://localhost:3000

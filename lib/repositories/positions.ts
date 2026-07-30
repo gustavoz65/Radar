@@ -145,13 +145,9 @@ export async function listPositions(): Promise<Position[]> {
 }
 
 /**
- * Imports the caixinhas a sync found, and drops the ones that no longer exist.
- *
- * `investedValue` is set to the current amount on every run rather than kept
- * from the first sighting. Pierre reports what a pot holds today, not what was
- * put into it, and freezing the first value would turn later deposits into a
- * fabricated gain. The honest consequence is that a caixinha always shows a
- * result of zero until sub-project 3 can price it properly.
+ * Imports the caixinhas a sync found and drops the ones that vanished.
+ * `investedValue` tracks the current amount: Pierre reports what a pot holds, not
+ * what was deposited, so freezing it would turn later deposits into a fake gain.
  */
 export async function upsertSyncedPositions(
   positions: NewSyncedPosition[],

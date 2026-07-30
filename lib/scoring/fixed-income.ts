@@ -10,13 +10,9 @@ export const FORMULA_VERSION = 'rf-1';
 export const FGC_LIMIT = 250_000;
 
 /**
- * Only two factors move the number, and both are measurable.
- *
- * Liquidity and FGC exposure are reported but not scored: the spec calls the
- * first informative and the second an alert, and folding either into the number
- * would mean deciding that daily liquidity is "better", which it is not.
- * News is qualitative — scoring it would need sentiment, and sentiment from the
- * LLM would let the model move a number it is forbidden to touch.
+ * Only these two move the number. Liquidity and FGC are reported, not scored:
+ * scoring liquidity would decide that daily access is "better", which it is not.
+ * News would need sentiment, and sentiment from the LLM would move the number.
  */
 const WEIGHTS = { ratePremium: 70, selicTrend: 30 } as const;
 

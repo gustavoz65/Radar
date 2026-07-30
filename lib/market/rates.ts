@@ -1,11 +1,9 @@
 import type { MarketRates } from '@/lib/types';
 
 /**
- * Turns a contracted-rate label into a comparable annual percentage.
- *
- * Returns null whenever the label cannot be resolved — an unrecognised format,
- * or an indicator that has not been collected yet. Callers render a dash for
- * that, never a zero, because zero reads as "yields nothing".
+ * Turns a contracted-rate label into a comparable annual percentage, or null when
+ * the format is unknown or the indicator has not been collected. Callers render a
+ * dash for null, never a zero, because zero reads as "yields nothing".
  */
 export function effectiveAnnualRate(
   rateLabel: string | null,

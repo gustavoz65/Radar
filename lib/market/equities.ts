@@ -78,11 +78,9 @@ async function fetchOne(ticker: string): Promise<EquityQuote[]> {
 }
 
 /**
- * Quotes B3 tickers one request at a time: the free brapi plan rejects a batch
- * with "Seu plano permite no máximo 1 ativo(s) por requisição".
- *
- * A ticker that fails is skipped rather than failing the batch; only a total
- * wipeout throws, since that means the token or the API is the problem.
+ * One request per ticker: the free brapi plan rejects a batch with "Seu plano
+ * permite no máximo 1 ativo(s) por requisição". A failed ticker is skipped; only
+ * a total wipeout throws, since that points at the token rather than the symbol.
  */
 export async function fetchEquityQuotes(tickers: string[]): Promise<EquityQuote[]> {
   if (tickers.length === 0) return [];

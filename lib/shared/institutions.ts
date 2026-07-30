@@ -1,14 +1,9 @@
 import type { Institution } from '@/lib/types';
 
 /**
- * Single source of truth for the connected institutions' identity (name,
- * initials, brand colour). Both the mocked fixtures and the Pierre mapper read
- * from here — the same hex values used to be duplicated across
- * `lib/data/fixtures/institutions.ts` and `lib/pierre/institutions.ts`, where a
- * colour tweak in one silently diverged from the other.
- *
- * Keyed by Pierre's providerCode. No official logos: an initials badge is the
- * whole visual identity.
+ * Single source for institution identity, keyed by Pierre's providerCode. These
+ * hexes were duplicated in two files once and drifted apart. No official logos:
+ * the initials badge is the whole visual identity.
  */
 export const institutionsByProviderCode = {
   BANCO_DO_BRASIL: { id: 'bb', name: 'Banco do Brasil', initials: 'BB', color: '#f5c518' },

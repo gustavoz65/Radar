@@ -15,11 +15,9 @@ import {
 const BASE_URL = 'https://pierre.finance/tools/api';
 
 /**
- * Cache TTLs, in seconds. These double as a debounce on "Atualizar agora":
- * repeated clicks stop hammering Pierre without making the button feel dead.
- *
- * manual-update is the slow call that asks each bank to refresh, and banks do
- * not re-answer within seconds, so it holds much longer than the reads.
+ * Cache TTLs in seconds, doubling as a debounce on "Atualizar agora".
+ * manual-update holds far longer: it asks the banks to refresh, and they do not
+ * re-answer within seconds.
  */
 const TTL = {
   manualUpdate: 5 * 60,
@@ -143,12 +141,9 @@ export interface PierreUpdateStatus {
 }
 
 /**
- * Asks Pierre to pull fresh data from the banks.
- *
- * A 200 here does NOT mean every bank answered: the response reports each
- * connection separately, and one can be failed or awaiting MFA while the call
- * itself succeeds. The counts are returned so the sync can say so instead of
- * reporting a clean success over stale data.
+ * Asks Pierre to pull fresh data from the banks. A 200 does not mean every bank
+ * answered — a connection can be failed or awaiting MFA — so the counts come back
+ * for the sync to report instead of claiming success over stale data.
  */
 export async function manualUpdate(): Promise<PierreUpdateStatus> {
   return cached(cacheKey('manual-update'), TTL.manualUpdate, requestManualUpdate);

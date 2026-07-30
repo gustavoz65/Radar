@@ -1,10 +1,6 @@
 /**
- * What the Cripto and Ações tabs quote regardless of what the user owns.
- *
- * Pierre covers banks; crypto and equities are a separate market the app exists
- * to help decide about. Quoting only held assets would leave both tabs empty
- * for anyone who has not bought yet — exactly the person who needs the prices.
- *
+ * Quoted regardless of what the user owns: quoting only held assets left both
+ * tabs empty for whoever had not bought yet, which is who needs the prices.
  * Crypto symbols are Binance BRL pairs; equity tickers are B3.
  */
 export const CRYPTO_WATCHLIST = [

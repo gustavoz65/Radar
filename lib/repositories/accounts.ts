@@ -45,14 +45,8 @@ export async function upsertAccounts(accounts: NewBankAccount[]): Promise<void> 
 }
 
 /**
- * Returns the number of genuinely new rows; duplicates by externalId are skipped.
- *
- * INSERT IGNORE rather than ON DUPLICATE KEY UPDATE: mysql2 connects with the
- * FOUND_ROWS flag, so a duplicate that updates nothing still reports
- * affectedRows 1 — indistinguishable from a real insert. With IGNORE, skipped
- * rows are not counted, so affectedRows is exactly the number inserted.
- * The unique index on external_id is what enforces the dedupe; IGNORE only
- * decides that hitting it is not an error.
+ * Returns how many rows were genuinely new. INSERT IGNORE, not ON DUPLICATE KEY
+ * UPDATE: mysql2 sets FOUND_ROWS, so a no-op duplicate also reports affectedRows 1.
  */
 export async function insertTransactions(txs: NewBankTransaction[]): Promise<number> {
   if (txs.length === 0) return 0;

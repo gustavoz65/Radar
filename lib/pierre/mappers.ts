@@ -22,11 +22,9 @@ export interface NewBankAccount {
 }
 
 /**
- * A caixinha imported as a fixed-income holding.
- *
- * Money in a reserved balance is invested money — Mercado Pago's "Grana" pays a
- * percentage of the CDI — and it is not counted in the account's balance, so
- * without this it is invisible everywhere.
+ * A caixinha imported as a fixed-income holding. A reserved balance is invested
+ * money paying a percentage of the CDI, and it is absent from the account balance,
+ * so without this it is invisible everywhere.
  */
 export interface NewSyncedPosition {
   externalId: string;
@@ -46,12 +44,8 @@ export interface NewBankTransaction {
 }
 
 /**
- * Pierre's type vocabulary is open-ended; anything unrecognised is treated as a
- * current account.
- *
- * A credit card is a real connected account but not an asset, so it gets its own
- * type rather than being folded into `corrente` — the balance there is a bill,
- * not money held.
+ * Pierre's vocabulary is open-ended, so anything unrecognised becomes `corrente`.
+ * A credit card gets its own type: folding it in would read a bill as money held.
  */
 export function mapAccountType(
   accountType: string,
@@ -129,11 +123,9 @@ function rateLabelFrom(remuneration: {
 }
 
 /**
- * Extracts every caixinha in an account as a position to import.
- *
- * The external id is built from the account and the pot's own identification so
- * the next sync updates the same row. Pots with no money are skipped: an empty
- * caixinha is not a holding.
+ * Extracts every caixinha as a position to import. The external id combines the
+ * account and the pot's own identification so a re-sync updates the same row.
+ * Empty pots are skipped — an empty caixinha is not a holding.
  */
 export function mapReservedBalances(account: PierreAccount): NewSyncedPosition[] {
   const pots = account.bankData?.reservedBalances ?? [];

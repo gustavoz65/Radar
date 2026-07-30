@@ -1,21 +1,9 @@
 import { cn } from '@/lib/utils';
 
 /**
- * The heading ladder. Four steps, most to least prominent. Every heading and
- * every label picks one — an `<h2>` is never styled ad hoc, which is how the
- * same semantic element ended up with three different visual weights depending
- * on which component it was copied from.
- *
- * 1. `SectionHeader` (h1)  — the route title, one per page.
- * 2. `PanelTitle`          — the title of the *content inside* a card (news item,
- *    tool, signal). The loudest thing in the card it lives in.
- * 3. `SubsectionTitle`     — names a region of the page (a chart, a list). Quiet,
- *    but text-coloured and semibold so it outranks a data label.
- * 4. `DataLabel`           — names *one value* (stat card, table header, score
- *    factor). Smallest, muted, normal weight. Never used as a heading.
- *
- * Steps 3 and 4 share the uppercase/tracking treatment of the Terminal Escuro
- * direction; what tells them apart is size, weight and colour — not shape.
+ * The heading ladder: SectionHeader (route title) > PanelTitle (inside a card) >
+ * SubsectionTitle (a region) > DataLabel (one value). Every heading picks a step,
+ * because styling `<h2>` ad hoc is how one element ended up with three weights.
  */
 
 type PanelTitleTag = 'h2' | 'h3';

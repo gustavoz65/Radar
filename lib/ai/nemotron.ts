@@ -33,9 +33,8 @@ function buildPrompt(requests: ExplainRequest[]): string {
     const factors = request.factors
       .map((factor) => `  - ${factor.label} (${factor.direction})`)
       .join('\n');
-    const news = request.headlines.length
-      ? `\n  Manchetes recentes:\n${request.headlines.map((h) => `  - ${h}`).join('\n')}`
-      : '';
+    const headlines = request.headlines.map((headline) => `  - ${headline}`).join('\n');
+    const news = headlines ? `\n  Manchetes recentes:\n${headlines}` : '';
     return `id: ${request.id}\n  Título: ${request.name}\n  Fatores:\n${factors}${news}`;
   });
 
@@ -49,10 +48,11 @@ function buildPrompt(requests: ExplainRequest[]): string {
 
 /** Pulls the JSON object out of a response that may carry stray prose around it. */
 function extractJson(content: string): unknown {
-  const match = /\{[\s\S]*\}/.exec(content);
-  if (!match) return null;
+  const start = content.indexOf('{');
+  const end = content.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
   try {
-    return JSON.parse(match[0]);
+    return JSON.parse(content.slice(start, end + 1));
   } catch {
     return null;
   }
@@ -74,11 +74,9 @@ function readExplanations(payload: unknown): Explanation[] {
 }
 
 /**
- * Asks the model to phrase the factors already computed.
- *
- * The score is deliberately absent from the prompt: the model cannot restate or
- * contradict a number it never received. Returns an empty array on any failure —
- * the caller keeps the deterministic score and falls back to fixed prose.
+ * Phrases factors that are already computed. The score is absent from the prompt
+ * on purpose: the model cannot restate a number it never received. Any failure
+ * returns an empty array, and the caller keeps the deterministic score.
  */
 export async function explainSignals(requests: ExplainRequest[]): Promise<Explanation[]> {
   const key = process.env.NVIDIA_API_KEY;

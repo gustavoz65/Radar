@@ -39,12 +39,9 @@ const KEYWORDS: { category: NewsCategory; terms: string[] }[] = [
 ];
 
 /**
- * Deterministic keyword match, no AI in this phase. Order matters: monetary
- * policy wins over the generic "banco" in "Banco Central".
- *
- * Anything unmatched is `mercado`. Defaulting to `acoes` filed geopolitics and
- * foreign-company news under Brazilian equities, which made the tab's filter
- * worse than useless.
+ * Deterministic keyword match, no AI. Order matters: monetary policy has to win
+ * over the generic "banco" in "Banco Central". Unmatched news goes to `mercado` —
+ * defaulting to `acoes` filed geopolitics under Brazilian equities.
  */
 export function categorise(title: string, tags: string[] = []): NewsCategory {
   const haystack = `${title} ${tags.join(' ')}`.toLowerCase();

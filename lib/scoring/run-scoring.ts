@@ -29,11 +29,9 @@ export interface ScoringResult {
 }
 
 /**
- * Recalculates the fixed-income signals after a sync.
- *
- * The formula runs first and its number is final. The model is called afterwards
- * and only supplies wording; if it fails, the score and the breakdown are still
- * saved with fixed prose.
+ * Recalculates the fixed-income signals after a sync. The formula runs first and
+ * its number is final; the model only supplies wording afterwards, and if it fails
+ * the score and breakdown are still saved with fixed prose.
  */
 export async function runScoring(deps: ScoringDeps): Promise<ScoringResult> {
   const [positions, rates, selicHistory, news] = await Promise.all([
