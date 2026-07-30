@@ -27,6 +27,18 @@ export interface Account {
   creditLimit: number | null;
   availableCreditLimit: number | null;
   balanceDueDate: string | null; // ISO 'YYYY-MM-DD'
+  minimumPayment: number | null;
+  closingDay: number | null;
+  /** Pierre reports false for every card: transactions may not have posted yet. */
+  billIsOfficial: boolean | null;
+}
+
+/** Money already committed to card installments — not available to invest. */
+export interface InstallmentCommitment {
+  amountRemaining: number;
+  installmentsRemaining: number;
+  purchases: number;
+  collectedAt: string; // ISO datetime
 }
 
 /** `pierre` positions are rewritten by every sync, so the UI must not offer to edit them. */

@@ -7,7 +7,13 @@ import { TrendValue } from '@/components/common/trend-value';
 import { AccountsList, CreditCardsList } from '@/components/overview/accounts-list';
 import { ConfidenceGauge } from '@/components/signal/confidence-gauge';
 import { formatBRL } from '@/lib/format/money';
-import { getAccounts, getPortfolioSummary, getSignals, getSyncStatus } from '@/lib/data/services';
+import {
+  getAccounts,
+  getInstallmentCommitment,
+  getPortfolioSummary,
+  getSignals,
+  getSyncStatus,
+} from '@/lib/data/services';
 import { SyncButton } from '@/components/sync/sync-button';
 import { SyncStatus } from '@/components/sync/sync-status';
 import { SubsectionTitle } from '@/components/common/typography';
@@ -15,11 +21,12 @@ import { surfaceCardClass } from '@/components/common/surface';
 import { cn } from '@/lib/utils';
 
 export default async function VisaoGeralPage() {
-  const [summary, accounts, signals, syncStatus] = await Promise.all([
+  const [summary, accounts, signals, syncStatus, installments] = await Promise.all([
     getPortfolioSummary(),
     getAccounts(),
     getSignals(),
     getSyncStatus(),
+    getInstallmentCommitment(),
   ]);
   const investedTotal = summary.allocation.reduce((total, slice) => total + slice.value, 0);
 
@@ -110,6 +117,13 @@ export default async function VisaoGeralPage() {
             <div className="space-y-3">
               <SubsectionTitle>Cartões de crédito</SubsectionTitle>
               <CreditCardsList accounts={creditCards} />
+              {installments && installments.amountRemaining > 0 ? (
+                <p className="text-xs text-muted">
+                  Parcelas a vencer: {formatBRL(installments.amountRemaining)} em{' '}
+                  {installments.purchases} compra(s), {installments.installmentsRemaining}{' '}
+                  parcela(s) restante(s) — dinheiro já comprometido.
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

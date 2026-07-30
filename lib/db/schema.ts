@@ -1,4 +1,5 @@
 import {
+  boolean,
   datetime,
   decimal,
   index,
@@ -28,6 +29,10 @@ export const bankAccounts = mysqlTable(
     creditLimit: decimal('credit_limit', { precision: 15, scale: 2 }),
     availableCreditLimit: decimal('available_credit_limit', { precision: 15, scale: 2 }),
     balanceDueDate: datetime('balance_due_date'),
+    minimumPayment: decimal('minimum_payment', { precision: 15, scale: 2 }),
+    closingDay: int('closing_day'),
+    /** Pierre reports false for every card: transactions may not have posted yet. */
+    billIsOfficial: boolean('bill_is_official'),
     lastSyncedAt: datetime('last_synced_at').notNull(),
   },
   (table) => [uniqueIndex('bank_account_external_id_idx').on(table.externalId)],
@@ -96,6 +101,18 @@ export const positionSnapshots = mysqlTable(
   },
   (table) => [index('position_snapshot_captured_at_idx').on(table.capturedAt)],
 );
+
+/**
+ * Money already committed to card installments. One row, replaced each sync: only
+ * the current commitment matters for deciding what is free to invest.
+ */
+export const installmentCommitment = mysqlTable('installment_commitment', {
+  id: int('id').primaryKey().autoincrement(),
+  amountRemaining: decimal('amount_remaining', { precision: 15, scale: 2 }).notNull(),
+  installmentsRemaining: int('installments_remaining').notNull(),
+  purchases: int('purchases').notNull(),
+  collectedAt: datetime('collected_at').notNull(),
+});
 
 /** Economic indicators from the BCB, one row per published reference date. */
 export const economicIndicators = mysqlTable(

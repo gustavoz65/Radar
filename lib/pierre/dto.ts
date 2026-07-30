@@ -168,6 +168,49 @@ export const pierreManualUpdateResponse = z.object({
   timestamp: z.string().nullish(),
 });
 
+/**
+ * get-bill-summary. `current_bill_amount` equals the account's `balance`, so the
+ * value here is not new — `minimum_payment`, `closing_day` and above all
+ * `isOfficialBillAmount` are. Pierre reports false for every card and warns the
+ * figure is approximate, which the screen has to say too.
+ */
+const pierreBillAccount = z.object({
+  account_id: z.string(),
+  account_name: z.string().nullish(),
+  current_bill_amount: z.number().nullish(),
+  isOfficialBillAmount: z.boolean().nullish(),
+  credit_limit: z.number().nullish(),
+  available_credit_limit: z.number().nullish(),
+  minimum_payment: z.number().nullish(),
+  closing_day: z.number().nullish(),
+  balance_due_date: z.string().nullish(),
+});
+
+export const pierreBillSummaryResponse = z.object({
+  success: z.boolean(),
+  data: z
+    .object({
+      accounts: z.array(pierreBillAccount).nullish(),
+    })
+    .nullish(),
+  notice: z.string().nullish(),
+  timestamp: z.string().nullish(),
+});
+
+/** get-installments. Only the aggregate matters: how much future money is committed. */
+export const pierreInstallmentsResponse = z.object({
+  success: z.boolean(),
+  summary: z
+    .object({
+      totalAmountRemaining: z.number().nullish(),
+      totalInstallmentsRemaining: z.number().nullish(),
+      totalPurchases: z.number().nullish(),
+    })
+    .nullish(),
+  timestamp: z.string().nullish(),
+});
+
+export type PierreBillAccount = z.infer<typeof pierreBillAccount>;
 export type PierreAccount = z.infer<typeof pierreAccount>;
 export type PierreBalance = z.infer<typeof pierreBalanceResponse>['data'];
 export type PierreTransaction = z.infer<typeof pierreTransaction>;

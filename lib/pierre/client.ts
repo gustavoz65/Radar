@@ -3,11 +3,14 @@ import { cached } from '@/lib/cache/redis';
 import {
   type PierreAccount,
   type PierreBalance,
+  type PierreBillAccount,
   type PierreTransaction,
   PierreContractError,
   parsePierre,
   pierreAccountsResponse,
   pierreBalanceResponse,
+  pierreBillSummaryResponse,
+  pierreInstallmentsResponse,
   pierreManualUpdateResponse,
   pierreTransactionsResponse,
 } from './dto';
@@ -171,6 +174,32 @@ function classify(reason: string | null): PierreConnectionIssue['kind'] {
  * answered — a connection can be failed or awaiting MFA — so the counts come back
  * for the sync to report instead of claiming success over stale data.
  */
+/** Per-card bill detail: minimum payment, closing day, and whether the amount is official. */
+export async function getBillSummary(): Promise<PierreBillAccount[]> {
+  return cached(cacheKey('get-bill-summary'), TTL.reads, async () => {
+    const payload = await request('get-bill-summary', 'GET');
+    return parsePierre(pierreBillSummaryResponse, payload, 'get-bill-summary').data?.accounts ?? [];
+  });
+}
+
+/** How much future money is already committed to card installments. */
+export async function getInstallmentCommitment(): Promise<{
+  amountRemaining: number;
+  installmentsRemaining: number;
+  purchases: number;
+}> {
+  return cached(cacheKey('get-installments'), TTL.reads, async () => {
+    const payload = await request('get-installments', 'GET');
+    const parsed = parsePierre(pierreInstallmentsResponse, payload, 'get-installments');
+
+    return {
+      amountRemaining: parsed.summary?.totalAmountRemaining ?? 0,
+      installmentsRemaining: parsed.summary?.totalInstallmentsRemaining ?? 0,
+      purchases: parsed.summary?.totalPurchases ?? 0,
+    };
+  });
+}
+
 export async function manualUpdate(): Promise<PierreUpdateStatus> {
   return cached(cacheKey('manual-update'), TTL.manualUpdate, requestManualUpdate);
 }

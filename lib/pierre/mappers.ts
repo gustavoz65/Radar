@@ -1,10 +1,21 @@
-import type { PierreAccount, PierreTransaction } from './dto';
+import type { PierreAccount, PierreBillAccount, PierreTransaction } from './dto';
 import { normalizeProviderCode } from './institutions';
 
 export type BankAccountType = 'corrente' | 'poupanca' | 'investimento' | 'credito';
 
 /** Pierre's own in-app wallet has no connector — it is not a third-party bank. */
 export const PIERRE_WALLET_PROVIDER_CODE = 'PIERRE';
+
+/** The bill detail get-bill-summary adds on top of what get-accounts already gives. */
+export interface CardBillDetail {
+  externalId: string;
+  creditLimit: number | null;
+  availableCreditLimit: number | null;
+  balanceDueDate: Date | null;
+  minimumPayment: number | null;
+  closingDay: number | null;
+  billIsOfficial: boolean;
+}
 
 export interface NewBankAccount {
   externalId: string;
@@ -152,6 +163,19 @@ export function mapReservedBalances(account: PierreAccount): NewSyncedPosition[]
       ];
     });
   });
+}
+
+export function mapBillDetail(bill: PierreBillAccount): CardBillDetail {
+  return {
+    externalId: bill.account_id,
+    creditLimit: bill.credit_limit ?? null,
+    availableCreditLimit: bill.available_credit_limit ?? null,
+    balanceDueDate: toUtcDate(bill.balance_due_date),
+    minimumPayment: bill.minimum_payment ?? null,
+    closingDay: bill.closing_day ?? null,
+    // Pierre answers false for every card; treat a missing flag the same way.
+    billIsOfficial: bill.isOfficialBillAmount === true,
+  };
 }
 
 export function mapPierreTransaction(tx: PierreTransaction): NewBankTransaction {

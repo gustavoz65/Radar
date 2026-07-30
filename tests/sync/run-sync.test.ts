@@ -42,6 +42,12 @@ function deps<T extends Partial<SyncDeps>>(overrides = {} as T) {
       },
     ]),
     upsertAccounts: vi.fn().mockResolvedValue(undefined),
+    getBillSummary: vi.fn().mockResolvedValue([]),
+    applyBillDetails: vi.fn().mockResolvedValue(0),
+    getInstallmentCommitment: vi
+      .fn()
+      .mockResolvedValue({ amountRemaining: 0, installmentsRemaining: 0, purchases: 0 }),
+    saveInstallmentCommitment: vi.fn().mockResolvedValue(undefined),
     upsertSyncedPositions: vi.fn().mockResolvedValue(0),
     insertTransactions: vi.fn().mockResolvedValue(1),
     snapshotPositions: vi.fn().mockResolvedValue(undefined),
@@ -184,6 +190,16 @@ describe('runSync', () => {
       }),
     });
     await expect(runSync(d)).resolves.toMatchObject({ status: 'success', error: null });
+  });
+
+  it('keeps the accounts when the bill detail call fails', async () => {
+    // Bill detail and installments are extras; losing them must not cost the sync.
+    const d = deps({ getBillSummary: vi.fn().mockRejectedValue(new Error('500')) });
+    const result = await runSync(d);
+
+    expect(result.status).toBe('success');
+    expect(result.accounts).toBe(1);
+    expect(d.upsertAccounts).toHaveBeenCalledOnce();
   });
 
   it('never leaks an api key into the recorded error', async () => {

@@ -69,10 +69,18 @@ export function CreditCardsList({ accounts }: { accounts: Account[] }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-text">{account.institution.name}</p>
             <p className="text-xs text-muted">
-              Fatura {formatBRL(account.balance)}
-              {account.creditLimit !== null ? ` · limite ${formatBRL(account.creditLimit)}` : ''}
+              {/* Pierre marks every bill as unofficial: transactions may not have posted. */}
+              Fatura {account.billIsOfficial ? '' : '≈ '}
+              {formatBRL(account.balance)}
               {account.balanceDueDate ? ` · vence ${shortDay(account.balanceDueDate)}` : ''}
+              {account.closingDay !== null ? ` · fecha dia ${account.closingDay}` : ''}
             </p>
+            {account.minimumPayment !== null ? (
+              <p className="text-xs text-muted">
+                Mínimo {formatBRL(account.minimumPayment)}
+                {account.creditLimit !== null ? ` · limite ${formatBRL(account.creditLimit)}` : ''}
+              </p>
+            ) : null}
           </div>
           <div className="shrink-0 text-right">
             <p className="tabular font-mono text-sm text-text">

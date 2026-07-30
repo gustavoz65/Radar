@@ -1,5 +1,5 @@
 import 'server-only';
-import { listAccounts } from '@/lib/repositories/accounts';
+import { latestInstallmentCommitment, listAccounts } from '@/lib/repositories/accounts';
 import { latestQuotes, latestRates, listNews, listQuotes } from '@/lib/repositories/market';
 import { listPortfolioHistory, listPositions } from '@/lib/repositories/positions';
 import { findSignal, listSignals } from '@/lib/repositories/signals';
@@ -11,6 +11,7 @@ import type {
   CryptoPosition,
   EquityPosition,
   FixedIncomePosition,
+  InstallmentCommitment,
   MarketQuote,
   MarketRates,
   NewsItem,
@@ -28,6 +29,11 @@ import type {
 
 export async function getAccounts(): Promise<Account[]> {
   return listAccounts();
+}
+
+/** Null until a sync collects it; zero means nothing is committed. */
+export async function getInstallmentCommitment(): Promise<InstallmentCommitment | null> {
+  return latestInstallmentCommitment();
 }
 
 /**

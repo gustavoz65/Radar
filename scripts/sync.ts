@@ -24,9 +24,15 @@ async function main() {
   }
 
   // Imported after dotenv so the db client sees DATABASE_URL.
-  const { getAccounts, getTransactions, manualUpdate } = await import('@/lib/pierre/client');
-  const { insertTransactions, listAccounts, upsertAccounts } =
-    await import('@/lib/repositories/accounts');
+  const { getAccounts, getBillSummary, getInstallmentCommitment, getTransactions, manualUpdate } =
+    await import('@/lib/pierre/client');
+  const {
+    applyBillDetails,
+    insertTransactions,
+    listAccounts,
+    saveInstallmentCommitment,
+    upsertAccounts,
+  } = await import('@/lib/repositories/accounts');
   const { snapshotPositions, upsertSyncedPositions } = await import('@/lib/repositories/positions');
   const { finishSync, lastSuccessfulSync, startSync } = await import('@/lib/repositories/sync-log');
   const { runSync } = await import('@/lib/sync/run-sync');
@@ -36,6 +42,10 @@ async function main() {
     getAccounts,
     getTransactions,
     upsertAccounts,
+    getBillSummary,
+    applyBillDetails,
+    getInstallmentCommitment,
+    saveInstallmentCommitment,
     upsertSyncedPositions,
     insertTransactions,
     snapshotPositions,

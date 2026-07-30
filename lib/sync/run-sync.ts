@@ -1,6 +1,16 @@
-import type { PierreAccount, PierreTransaction } from '@/lib/pierre/dto';
-import { mapPierreAccount, mapPierreTransaction, mapReservedBalances } from '@/lib/pierre/mappers';
-import type { NewBankAccount, NewBankTransaction, NewSyncedPosition } from '@/lib/pierre/mappers';
+import type { PierreAccount, PierreBillAccount, PierreTransaction } from '@/lib/pierre/dto';
+import {
+  mapBillDetail,
+  mapPierreAccount,
+  mapPierreTransaction,
+  mapReservedBalances,
+} from '@/lib/pierre/mappers';
+import type {
+  CardBillDetail,
+  NewBankAccount,
+  NewBankTransaction,
+  NewSyncedPosition,
+} from '@/lib/pierre/mappers';
 
 const FALLBACK_WINDOW_DAYS = 90;
 
@@ -26,6 +36,17 @@ export interface SyncDeps {
     endDate?: string;
   }) => Promise<PierreTransaction[]>;
   upsertAccounts: (accounts: NewBankAccount[]) => Promise<void>;
+  getBillSummary: () => Promise<PierreBillAccount[]>;
+  applyBillDetails: (details: CardBillDetail[]) => Promise<number>;
+  getInstallmentCommitment: () => Promise<{
+    amountRemaining: number;
+    installmentsRemaining: number;
+    purchases: number;
+  }>;
+  saveInstallmentCommitment: (
+    commitment: { amountRemaining: number; installmentsRemaining: number; purchases: number },
+    collectedAt: Date,
+  ) => Promise<void>;
   upsertSyncedPositions: (positions: NewSyncedPosition[], syncedAt: Date) => Promise<number>;
   insertTransactions: (txs: NewBankTransaction[]) => Promise<number>;
   snapshotPositions: (capturedAt: Date) => Promise<void>;
@@ -80,6 +101,18 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
     // Caixinhas are invested money that never appears in an account balance, so
     // they are imported as fixed-income positions rather than left invisible.
     await deps.upsertSyncedPositions(pierreAccounts.flatMap(mapReservedBalances), startedAt);
+
+    // Bill detail and installments are extras: losing them must not cost the sync
+    // the accounts and transactions it already has.
+    try {
+      const bills = await deps.getBillSummary();
+      await deps.applyBillDetails(bills.map((bill) => mapBillDetail(bill)));
+
+      const commitment = await deps.getInstallmentCommitment();
+      await deps.saveInstallmentCommitment(commitment, startedAt);
+    } catch {
+      // Swallowed on purpose: the accounts and transactions are already written.
+    }
   } catch (error) {
     const message = safeMessage(error);
     await deps.finishSync(logId, 'error', message);

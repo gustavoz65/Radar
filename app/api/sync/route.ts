@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
-import { getAccounts, getTransactions, manualUpdate } from '@/lib/pierre/client';
-import { insertTransactions, upsertAccounts } from '@/lib/repositories/accounts';
+import {
+  getAccounts,
+  getBillSummary,
+  getInstallmentCommitment,
+  getTransactions,
+  manualUpdate,
+} from '@/lib/pierre/client';
+import {
+  applyBillDetails,
+  insertTransactions,
+  saveInstallmentCommitment,
+  upsertAccounts,
+} from '@/lib/repositories/accounts';
 import { snapshotPositions, upsertSyncedPositions } from '@/lib/repositories/positions';
 import { finishSync, lastSuccessfulSync, startSync } from '@/lib/repositories/sync-log';
 import { runSync } from '@/lib/sync/run-sync';
@@ -22,6 +33,10 @@ export async function POST() {
     getAccounts,
     getTransactions,
     upsertAccounts,
+    getBillSummary,
+    applyBillDetails,
+    getInstallmentCommitment,
+    saveInstallmentCommitment,
     upsertSyncedPositions,
     insertTransactions,
     snapshotPositions,
