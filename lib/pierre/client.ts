@@ -129,6 +129,17 @@ export async function getTransactions(range: {
   );
 }
 
+/**
+ * A connection that did not refresh. `kind` decides the wording: telling someone
+ * to reconnect their bank when Pierre merely rate-limited us sends them chasing a
+ * problem that does not exist.
+ */
+export interface PierreConnectionIssue {
+  connectorName: string | null;
+  reason: string | null;
+  kind: 'throttled' | 'actionable';
+}
+
 /** What a refresh actually achieved, per connected institution. */
 export interface PierreUpdateStatus {
   totalItems: number | null;
@@ -138,6 +149,21 @@ export interface PierreUpdateStatus {
   needsUserInput: number | null;
   /** Connections Pierre could not refresh at all. */
   failed: number | null;
+  issues: PierreConnectionIssue[];
+}
+
+/**
+ * Pierre's own wallet reports `WALLET_NOT_SYNCABLE` on every refresh: it is not a
+ * bank connection, so there is nothing to sync. Counting it as a failure made the
+ * dashboard warn about stale balances after every single sync.
+ */
+const NOT_A_FAILURE = new Set(['WALLET_NOT_SYNCABLE']);
+
+/** Pierre pacing us, not a broken connection — nothing for the user to fix. */
+const THROTTLED = [/already in progress/i, /limit exceeded/i, /too many requests/i];
+
+function classify(reason: string | null): PierreConnectionIssue['kind'] {
+  return reason && THROTTLED.some((pattern) => pattern.test(reason)) ? 'throttled' : 'actionable';
 }
 
 /**
@@ -154,11 +180,22 @@ async function requestManualUpdate(): Promise<PierreUpdateStatus> {
   const parsed = parsePierre(pierreManualUpdateResponse, payload, 'manual-update');
   const details = parsed.details;
 
+  const issues: PierreConnectionIssue[] = [
+    ...(details?.failed?.items ?? []),
+    ...(details?.loginErrors?.items ?? []),
+  ]
+    .filter((item) => !NOT_A_FAILURE.has(item.codeDescription ?? ''))
+    .map((item) => {
+      const reason = item.error ?? item.codeDescription ?? null;
+      return { connectorName: item.connectorName ?? null, reason, kind: classify(reason) };
+    });
+
   return {
     totalItems: details?.totalItems ?? null,
     completed: details?.completed?.count ?? null,
     inProgress: details?.inProgress?.count ?? null,
     needsUserInput: details?.needsUserInput?.count ?? null,
-    failed: (details?.failed?.count ?? 0) + (details?.loginErrors?.count ?? 0) || null,
+    failed: issues.length || null,
+    issues,
   };
 }

@@ -11,6 +11,11 @@ export interface RefreshStatus {
   inProgress: number | null;
   needsUserInput: number | null;
   failed: number | null;
+  issues?: {
+    connectorName: string | null;
+    reason: string | null;
+    kind?: 'throttled' | 'actionable';
+  }[];
 }
 
 export interface SyncDeps {
@@ -62,6 +67,9 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
   let refresh: RefreshStatus | null = null;
 
   try {
+    // The docs are explicit that some accounts "continuam processando em
+    // background", and Pierre exposes no endpoint to poll for completion. So the
+    // reads below see the previous pull: this refresh lands on the next sync.
     refresh = await deps.manualUpdate();
 
     const pierreAccounts = await deps.getAccounts();
@@ -106,13 +114,34 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
   // "success" would hide that.
   const stale = (refresh?.failed ?? 0) + (refresh?.needsUserInput ?? 0);
   if (stale > 0) {
-    const parts: string[] = [];
-    if (refresh?.failed) parts.push(`${refresh.failed} com falha`);
-    if (refresh?.needsUserInput) parts.push(`${refresh.needsUserInput} aguardando sua confirmação`);
-    const total = refresh?.totalItems ? ` de ${refresh.totalItems}` : '';
-    const message =
-      `${stale}${total} conexões não atualizaram (${parts.join(', ')}). ` +
-      'Os saldos dessas contas podem estar desatualizados.';
+    const issues = refresh?.issues ?? [];
+    const actionable = issues.filter((issue) => issue.kind !== 'throttled');
+    const throttled = issues.length - actionable.length;
+
+    // Two different problems deserve two different sentences: a rate limit clears
+    // on its own, a broken login does not.
+    let message: string;
+    if (actionable.length === 0 && refresh?.needsUserInput === 0) {
+      message =
+        `A Pierre limitou a frequência de atualização (${throttled} conexões). ` +
+        'Os saldos abaixo são do último pull concluído dela; tente de novo em alguns minutos.';
+    } else {
+      const named = actionable
+        .map(
+          (issue) =>
+            [issue.connectorName, issue.reason].filter(Boolean).join(': ') ||
+            'conexão desconhecida',
+        )
+        .join('; ');
+      const awaiting = refresh?.needsUserInput
+        ? `${refresh.needsUserInput} aguardando confirmação`
+        : '';
+      const detail = [named, awaiting].filter(Boolean).join('; ');
+
+      message =
+        `Não atualizou: ${detail}. ` +
+        'Reconecte no app da Pierre — os saldos dessas contas estão desatualizados.';
+    }
 
     await deps.finishSync(logId, 'partial', message);
     return {

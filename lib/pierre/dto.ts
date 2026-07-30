@@ -130,7 +130,19 @@ export const pierreTransactionsResponse = z.object({
 
 /** One bucket of the manual-update report, e.g. `failed: { count, items }`. */
 const updateBucket = z
-  .object({ count: z.number().nullish(), items: z.array(z.unknown()).nullish() })
+  .object({
+    count: z.number().nullish(),
+    items: z
+      .array(
+        z.object({
+          itemId: z.string().nullish(),
+          connectorName: z.string().nullish(),
+          error: z.string().nullish(),
+          codeDescription: z.string().nullish(),
+        }),
+      )
+      .nullish(),
+  })
   .nullish();
 
 /**

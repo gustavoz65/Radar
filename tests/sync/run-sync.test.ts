@@ -133,6 +133,9 @@ describe('runSync', () => {
         inProgress: 0,
         needsUserInput: 1,
         failed: 1,
+        issues: [
+          { connectorName: 'Nubank', reason: 'senha inválida', kind: 'actionable' as const },
+        ],
       }),
     });
 
@@ -143,8 +146,31 @@ describe('runSync', () => {
     expect(result.status).toBe('partial');
     expect(result.accounts).toBe(1);
     expect(result.transactions).toBe(1);
-    expect(result.error).toContain('não atualizaram');
+    // Naming the bank is what makes the warning actionable.
+    expect(result.error).toContain('Nubank');
+    expect(result.error).toContain('senha inválida');
     expect(d.snapshotPositions).toHaveBeenCalledOnce();
+  });
+
+  it('tells the user to wait, not to reconnect, when Pierre is rate limiting', async () => {
+    const d = deps({
+      manualUpdate: vi.fn().mockResolvedValue({
+        totalItems: 5,
+        completed: 0,
+        inProgress: 4,
+        needsUserInput: 0,
+        failed: 1,
+        issues: [
+          { connectorName: null, reason: 'Sync limit exceeded', kind: 'throttled' as const },
+        ],
+      }),
+    });
+
+    const result = await runSync(d);
+
+    expect(result.status).toBe('partial');
+    expect(result.error).toContain('limitou a frequência');
+    expect(result.error).not.toContain('Reconecte');
   });
 
   it('still reports success when every connection refreshed cleanly', async () => {

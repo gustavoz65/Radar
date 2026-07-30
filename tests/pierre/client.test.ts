@@ -171,7 +171,15 @@ describe('manualUpdate', () => {
           inProgress: { count: 1, items: [] },
           needsUserInput: { count: 0, items: [] },
           loginErrors: { count: 0, items: [] },
-          failed: { count: 4, items: [] },
+          failed: {
+            count: 4,
+            items: [
+              { connectorName: 'Nubank', error: 'boom' },
+              { connectorName: 'Sicredi', error: 'boom' },
+              { connectorName: 'Banco do Brasil', error: 'boom' },
+              { connectorName: 'Mercado Pago', error: 'boom' },
+            ],
+          },
         }),
       ),
     );
@@ -184,13 +192,78 @@ describe('manualUpdate', () => {
     expect(result.failed).toBe(4);
   });
 
-  it('counts a login error as a failed connection', async () => {
+  it('does not count Pierre own wallet as a failed connection', async () => {
+    // WALLET_NOT_SYNCABLE arrives on every refresh: the in-app wallet is not a
+    // bank, so counting it warned about stale balances after every sync.
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        report({
+          totalItems: 5,
+          inProgress: { count: 4, items: [] },
+          failed: {
+            count: 1,
+            items: [
+              { itemId: 'w1', error: 'Sync not allowed', codeDescription: 'WALLET_NOT_SYNCABLE' },
+            ],
+          },
+        }),
+      ),
+    );
+
+    const result = await manualUpdate();
+    expect(result.failed).toBeNull();
+    expect(result.issues).toEqual([]);
+  });
+
+  it('names the bank and the reason for a real failure', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        report({
+          totalItems: 5,
+          failed: {
+            count: 1,
+            items: [{ itemId: 'i1', connectorName: 'Nubank', error: 'Invalid credentials' }],
+          },
+        }),
+      ),
+    );
+
+    const result = await manualUpdate();
+    expect(result.failed).toBe(1);
+    expect(result.issues).toEqual([
+      { connectorName: 'Nubank', reason: 'Invalid credentials', kind: 'actionable' },
+    ]);
+  });
+
+  it('marks a rate limit as throttled, not as something to reconnect', async () => {
+    // "Sync limit exceeded" is not in Pierre's docs at all — it is a server-side
+    // limit, and telling the user to reconnect their bank over it is wrong.
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        report({
+          totalItems: 5,
+          failed: {
+            count: 2,
+            items: [
+              { connectorName: 'Nubank', error: 'Sync limit exceeded' },
+              { connectorName: 'Sicredi', error: 'Sync already in progress' },
+            ],
+          },
+        }),
+      ),
+    );
+
+    const result = await manualUpdate();
+    expect(result.issues.every((issue) => issue.kind === 'throttled')).toBe(true);
+  });
+
+  it('counts a login error alongside a failure', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(
         report({
           totalItems: 2,
-          failed: { count: 1, items: [] },
-          loginErrors: { count: 1, items: [] },
+          failed: { count: 1, items: [{ connectorName: 'Sicredi', error: 'boom' }] },
+          loginErrors: { count: 1, items: [{ connectorName: 'Nubank', error: 'senha inválida' }] },
         }),
       ),
     );
@@ -207,6 +280,7 @@ describe('manualUpdate', () => {
       inProgress: null,
       needsUserInput: null,
       failed: null,
+      issues: [],
     });
   });
 });
