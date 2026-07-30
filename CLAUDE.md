@@ -79,7 +79,10 @@ chame a Pierre, uma API externa, o banco ou um repositório direto de um compone
    `components/common/typography.tsx` (`PanelTitle`/`SubsectionTitle`/`DataLabel`), e todo
    card usa `surfaceCardClass` de `components/common/surface.ts`. A tag (`h2`, `h3`) segue
    a hierarquia do documento; o peso visual vem do degrau, não da tag.
-9. **Conventional Commits**; commits pequenos.
+9. **Conventional Commits**; commits pequenos. **Nenhuma atribuição de IA no commit.**
+   Proibido `Co-Authored-By` de Claude/Anthropic/Copilot/GPT/Gemini/Cursor, proibido
+   "Generated with", proibido usar uma identidade de IA como autor ou committer. O commit
+   é do dono do repositório; a ferramenta usada para escrevê-lo não assina o trabalho.
 10. **Comentário é exceção, não hábito.** Clean code: o nome da função e do tipo carregam o
     quê; comentário só entra quando explica um **porquê** que o código não consegue mostrar
     — uma decisão contra-intuitiva, um bug de terceiro, um trade-off. Uma ou duas linhas.
