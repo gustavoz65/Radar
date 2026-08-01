@@ -18,9 +18,11 @@ export default async function PosicoesPage() {
   const positions = [...fixedIncome, ...crypto, ...equities];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <SectionHeader
+        eyebrow="Carteira · cadastro manual"
         title="Posições"
+        highlight="Posições"
         description="Cadastro manual da carteira. É daqui que sai o patrimônio consolidado da visão geral."
       />
 
@@ -28,6 +30,7 @@ export default async function PosicoesPage() {
 
       {positions.length === 0 ? (
         <EmptyState
+          label="Carteira vazia"
           title="Nenhuma posição cadastrada ainda"
           description="Cadastre um CDB, uma ação ou uma cripto para ver seu patrimônio consolidado na visão geral."
         />

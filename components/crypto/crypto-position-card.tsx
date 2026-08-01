@@ -3,7 +3,8 @@ import { AreaHistoryChart } from '@/components/charts/area-history-chart';
 import { TrendValue } from '@/components/common/trend-value';
 import { formatBRL } from '@/lib/format/money';
 import { percentChange } from '@/lib/format/percent';
-import { surfaceCardClass } from '@/components/common/surface';
+import { instrumentCardClass, interactiveSurfaceClass } from '@/components/common/surface';
+import { cn } from '@/lib/utils';
 
 const quantityFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 });
 
@@ -12,11 +13,13 @@ export function CryptoPositionCard({ position }: { position: CryptoPosition }) {
   const trendColor = totalReturn >= 0 ? 'var(--positive)' : 'var(--negative)';
 
   return (
-    <article className={surfaceCardClass}>
+    <article className={cn(instrumentCardClass, interactiveSurfaceClass)}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="font-mono text-base font-semibold text-text">{position.symbol}</span>
+            <span className="font-mono text-base font-semibold tracking-[0.02em] text-text">
+              {position.symbol}
+            </span>
             <span className="text-sm text-muted">{position.name}</span>
           </div>
           <p className="tabular mt-1 font-mono text-xs text-muted">
@@ -25,7 +28,9 @@ export function CryptoPositionCard({ position }: { position: CryptoPosition }) {
           </p>
         </div>
         <div className="text-right">
-          <p className="tabular font-mono text-lg text-text">{formatBRL(position.currentValue)}</p>
+          <p className="tabular font-mono text-lg tracking-[-0.01em] text-text">
+            {formatBRL(position.currentValue)}
+          </p>
           <p className="text-sm">
             <TrendValue value={position.change24h} format="percent" className="text-sm" />
             <span className="ml-1.5 text-xs text-muted">24h</span>

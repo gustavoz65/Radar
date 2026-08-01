@@ -55,7 +55,7 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
             step={100}
             value={amount}
             onChange={(event) => setAmount(Number(event.target.value) || 0)}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
         <div className="space-y-1.5">
@@ -69,7 +69,7 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
             max={360}
             value={months}
             onChange={(event) => setMonths(Math.max(1, Number(event.target.value) || 1))}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
         <div className="space-y-1.5">
@@ -83,7 +83,7 @@ export function CdbComparator({ cdi, selic, poupanca }: CdbComparatorProps) {
             max={200}
             value={cdiPercent}
             onChange={(event) => setCdiPercent(Math.max(1, Number(event.target.value) || 1))}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
       </div>

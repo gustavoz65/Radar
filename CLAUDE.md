@@ -17,6 +17,9 @@ transição a ser removido, não contexto a seguir.
 
 1. [docs/superpowers/specs/](docs/superpowers/specs/) — specs de design, uma por
    sub-projeto (veja "Como o projeto está dividido" abaixo). **Fonte de verdade atual.**
+   A linguagem visual e o sistema de movimento estão numa spec própria,
+   `2026-08-01-radar-design-system-design.md` ("Terrain") — ela substitui a seção
+   visual da spec do frontend MVP e é o que vale para qualquer tela nova.
 2. Os ADRs e docs de arquitetura antigos (`docs/architecture/`) descrevem o Omnia — não
    se aplicam ao Radar. Novos ADRs para o Radar, se necessários, vão em
    `docs/architecture/adr/` seguindo o mesmo formato.
@@ -56,11 +59,15 @@ chame a Pierre, uma API externa, o banco ou um repositório direto de um compone
    sempre da fórmula determinística, nunca de um LLM** — a IA não recebe o score no
    prompt, justamente para não poder repeti-lo nem contradizê-lo, e o disclaimer é fixo
    em código. Se a IA falhar, score e fatores continuam sendo salvos e exibidos.
-2. **A cor de assinatura do score (`--signature-gold`) nunca é reaproveitada** para
-   variação de preço (alta/baixa usam `--positive`/`--negative`). São conceitos
-   diferentes e devem ser visualmente distintos. Classe de ativo é um terceiro conceito,
-   com tokens próprios (`--asset-fixed-income`/`--asset-crypto`/`--asset-equity`).
-   **Nenhuma cor vive como hex cru fora de `app/globals.css`** — inclusive em gráfico.
+2. **Quatro conceitos de cor, sem cruzamento.** Direção de preço é
+   `--positive`/`--negative`. Confiança é `--signature-gold` — só o gauge e um StatCard
+   cujo número **é** um score; fora daí o ouro aparece em um único lugar, o contato da
+   marca. Classe de ativo tem tokens próprios
+   (`--asset-fixed-income`/`--asset-crypto`/`--asset-equity`), com valores literais: não
+   volte a fazer renda fixa ser um alias de `--accent`. Interação (link, foco, aba ativa,
+   ação primária) é `--accent`. **Nenhuma cor vive como hex cru fora de
+   `app/globals.css`** — inclusive em gráfico. A única exceção é `institution.color`, que
+   é dado, não design.
 3. **Toda tela é responsiva de verdade** — desktop e mobile são adaptações de primeira
    classe do mesmo layout, revisadas juntas, nunca "desktop primeiro, mobile depois".
 4. **Sem chamada de rede direta em componente.** Toda leitura de dados passa por
@@ -75,24 +82,32 @@ chame a Pierre, uma API externa, o banco ou um repositório direto de um compone
    rende, "R$ 0,00 de rentabilidade" diz que não lucrou. Quando o dado não existe (taxa
    equivalente sem CDI coletado, custo de aquisição que a Pierre não informa), a tela diz
    que não sabe.
-8. **Nada de estilizar heading solto.** Todo título/label usa um degrau de
-   `components/common/typography.tsx` (`PanelTitle`/`SubsectionTitle`/`DataLabel`), e todo
-   card usa `surfaceCardClass` de `components/common/surface.ts`. A tag (`h2`, `h3`) segue
-   a hierarquia do documento; o peso visual vem do degrau, não da tag.
-9. **Conventional Commits**; commits pequenos. **Nenhuma atribuição de IA no commit.**
-   Proibido `Co-Authored-By` de Claude/Anthropic/Copilot/GPT/Gemini/Cursor, proibido
-   "Generated with", proibido usar uma identidade de IA como autor ou committer. O commit
-   é do dono do repositório; a ferramenta usada para escrevê-lo não assina o trabalho.
-10. **Comentário é exceção, não hábito.** Clean code: o nome da função e do tipo carregam o
+8. **Nada de estilizar heading, card, botão ou animação solto.** Título/label usa um
+   degrau de `components/common/typography.tsx`
+   (`DisplayTitle`/`Eyebrow`/`PanelTitle`/`SubsectionTitle`/`DataLabel`); card usa uma
+   receita de `components/common/surface.ts`; ação usa uma de
+   `components/common/action.ts`; movimento usa `staggerClass`/`<Reveal>` de
+   `components/common/motion.tsx` com duração em `--dur-*` e curva em `--ease-*`. A tag
+   (`h2`, `h3`) segue a hierarquia do documento; o peso visual vem do degrau, não da tag.
+   Toda rota abre com `SectionHeader` — não existe `<h1>` solto.
+9. **Movimento tem um único interruptor de acessibilidade.** O bloco
+   `prefers-reduced-motion` no fim de `app/globals.css` cobre tudo que é CSS; não escreva
+   guarda própria. O Recharts anima por JS e o CSS não o alcança, então gráfico novo
+   consulta `useReducedMotion()` e passa `isAnimationActive`.
+10. **Conventional Commits**; commits pequenos. **Nenhuma atribuição de IA no commit.**
+    Proibido `Co-Authored-By` de Claude/Anthropic/Copilot/GPT/Gemini/Cursor, proibido
+    "Generated with", proibido usar uma identidade de IA como autor ou committer. O commit
+    é do dono do repositório; a ferramenta usada para escrevê-lo não assina o trabalho.
+11. **Comentário é exceção, não hábito.** Clean code: o nome da função e do tipo carregam o
     quê; comentário só entra quando explica um **porquê** que o código não consegue mostrar
     — uma decisão contra-intuitiva, um bug de terceiro, um trade-off. Uma ou duas linhas.
     Nunca parafraseie o que a linha abaixo já diz, nunca escreva parágrafo em bloco de
     comentário, nunca deixe comentário de "histórico" (isso é trabalho do git log).
     Se precisar de muitas linhas para explicar, o código provavelmente está errado.
-11. **Antes de codar contra uma API externa, valide o contrato ao vivo.** A doc da Pierre
+12. **Antes de codar contra uma API externa, valide o contrato ao vivo.** A doc da Pierre
     estava errada, a spec apontava as séries erradas do BCB, e a brapi só aceita 1 ticker
     por requisição no plano grátis — os três só apareceram numa chamada real.
-12. Sem multi-usuário e sem testes e2e nesta fase.
+13. Sem multi-usuário e sem testes e2e nesta fase.
 
 ## Comandos
 
@@ -119,9 +134,14 @@ app/
   api/                      # sync, positions — o BFF; nenhuma chave sai daqui
 components/
   ui/                       # shadcn/ui
+  common/                   # o design system: typography, surface, action, motion,
+                            # terrain, section-header, stat-card, readout
+  shell/                    # header, navegação, marca
+  charts/                   # Recharts + chart-theme.ts (tooltip/eixo/grid comuns)
   <feature>/                # componentes de cada aba
 lib/
   data/services.ts          # ÚNICA porta de leitura da UI
+  hooks/                    # use-reduced-motion (ponte CSS→JS p/ o Recharts)
   db/                       # schema + pool Drizzle
   repositories/             # acesso a tabela, um módulo por assunto
   pierre/                   # cliente Open Finance (DTO Zod + mappers)
@@ -138,7 +158,8 @@ scripts/                    # sync CLI, setup do banco de teste
 1. Valide o contrato da fonte externa com uma chamada real antes de escrever schema.
 2. Contrato em `lib/types/` → parser puro em `lib/<fonte>/` com Zod na borda →
    repositório em `lib/repositories/` → função em `lib/data/services.ts`.
-3. Rota em `app/(dashboard)/<aba>/` com `loading.tsx` real (Suspense).
+3. Rota em `app/(dashboard)/<aba>/` com `loading.tsx` real (Suspense), abrindo com
+   `SectionHeader` e com os grids marcados com `staggerClass`.
 4. Teste o parser offline (fixture de resposta real no teste, nunca chamada de rede) e a
    persistência contra `radar_test`.
 5. Se a aba expõe um `Signal`, o breakdown de fatores + disclaimer é obrigatório.
