@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation';
 import { AuthError } from 'next-auth';
 import { auth, signIn } from '@/auth';
+import { TerrainField } from '@/components/common/terrain';
+import { RadarMark } from '@/components/shell/radar-mark';
+import { DisplayTitle, Eyebrow, dataLabelClass } from '@/components/common/typography';
+import { instrumentCardClass, wellClass } from '@/components/common/surface';
+import { primaryActionClass } from '@/components/common/action';
+import { cn } from '@/lib/utils';
 
 export default async function LoginPage({
   searchParams,
@@ -14,71 +20,84 @@ export default async function LoginPage({
   // a wrong password looks like nothing happened at all.
   const { erro } = await searchParams;
 
+  const fieldClass = cn(
+    wellClass,
+    'w-full px-3 py-2 text-sm text-text transition-colors duration-(--dur-1) focus:border-border-strong',
+  );
+
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-6">
-        <div className="mb-6 flex items-center gap-2">
-          <span className="size-2 rounded-full bg-gold" aria-hidden />
-          <span className="font-mono text-sm tracking-widest text-text">RADAR</span>
-        </div>
-        <h1 className="mb-1 text-lg font-semibold text-text">Entrar</h1>
-        <p className="mb-5 text-sm text-muted">Acesso restrito ao dono da conta.</p>
+    <main className="relative flex min-h-dvh items-center justify-center px-4 py-12">
+      <TerrainField />
 
-        {erro ? (
-          <p role="alert" className="mb-4 text-sm text-negative">
-            E-mail ou senha incorretos.
-          </p>
-        ) : null}
-
-        <form
-          className="space-y-4"
-          action={async (formData: FormData) => {
-            'use server';
-            try {
-              await signIn('credentials', {
-                email: formData.get('email'),
-                password: formData.get('password'),
-                redirectTo: '/visao-geral',
-              });
-            } catch (error) {
-              if (error instanceof AuthError) redirect('/login?erro=1');
-              throw error;
-            }
-          }}
-        >
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="text-xs uppercase tracking-wider text-muted">
-              E-mail
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="username"
-              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text"
-            />
+      <div className="motion-rise w-full max-w-sm space-y-8">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5">
+            <RadarMark className="size-5 shrink-0" />
+            <span className="font-mono text-sm tracking-[0.28em] text-text">RADAR</span>
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="password" className="text-xs uppercase tracking-wider text-muted">
-              Senha
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-accent px-3 py-2 text-sm font-medium text-bg"
-          >
+          <Eyebrow>Acesso restrito</Eyebrow>
+          <DisplayTitle highlight="Entrar" className="text-[clamp(1.75rem,1.2rem+2vw,2.5rem)]">
             Entrar
-          </button>
-        </form>
+          </DisplayTitle>
+          <p className="text-sm leading-relaxed text-muted">
+            Esta instância tem um único dono. Não há cadastro público.
+          </p>
+        </div>
+
+        <div className={instrumentCardClass}>
+          {erro ? (
+            <p role="alert" className="mb-4 text-sm text-negative">
+              E-mail ou senha incorretos.
+            </p>
+          ) : null}
+
+          <form
+            className="space-y-4"
+            action={async (formData: FormData) => {
+              'use server';
+              try {
+                await signIn('credentials', {
+                  email: formData.get('email'),
+                  password: formData.get('password'),
+                  redirectTo: '/visao-geral',
+                });
+              } catch (error) {
+                if (error instanceof AuthError) redirect('/login?erro=1');
+                throw error;
+              }
+            }}
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="email" className={cn(dataLabelClass, 'block')}>
+                E-mail
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="username"
+                className={fieldClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="password" className={cn(dataLabelClass, 'block')}>
+                Senha
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className={fieldClass}
+              />
+            </div>
+            <button type="submit" className={cn(primaryActionClass, 'w-full')}>
+              Entrar
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   );

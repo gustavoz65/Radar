@@ -33,10 +33,10 @@ export function FilterGroup<T extends string>({
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            'rounded-md px-3 py-1.5 text-sm transition-colors',
+            'relative rounded-md border px-3 py-1.5 text-sm transition-colors duration-(--dur-1)',
             value === option.value
-              ? 'bg-surface text-text'
-              : 'text-muted hover:bg-surface/60 hover:text-text',
+              ? 'border-border bg-surface-raised text-text'
+              : 'border-transparent text-muted hover:bg-surface hover:text-text',
             buttonClassName,
           )}
         >

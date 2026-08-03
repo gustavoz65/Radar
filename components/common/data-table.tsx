@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { dataLabelClass } from '@/components/common/typography';
 import { surfaceCardClass, surfaceClass } from '@/components/common/surface';
+import { staggerClass } from '@/components/common/motion';
 
 export interface Column<T> {
   key: string;
@@ -24,7 +25,9 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
       <div className={cn('hidden overflow-x-auto md:block', surfaceClass)}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border">
+            {/* The header sits in the recess, so the rows read as raised above
+                it — the same elevation grammar the cards use. */}
+            <tr className="border-b border-border bg-well">
               {columns.map((column) => (
                 <th
                   key={column.key}
@@ -42,7 +45,10 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-border last:border-0">
+              <tr
+                key={rowKey(row)}
+                className="border-b border-border transition-colors duration-(--dur-1) last:border-0 hover:bg-surface-raised"
+              >
                 {columns.map((column) => (
                   <td
                     key={column.key}
@@ -61,11 +67,11 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
       </div>
 
       {/* Mobile: stacked cards */}
-      <ul className="space-y-3 md:hidden">
+      <ul className={cn('space-y-3 md:hidden', staggerClass)}>
         {rows.map((row) => (
           <li key={rowKey(row)} className={surfaceCardClass}>
             <div className="mb-3 text-text">{primary.cell(row)}</div>
-            <dl className="space-y-1.5">
+            <dl className="space-y-2">
               {rest.map((column) => (
                 <div key={column.key} className="flex items-baseline justify-between gap-3">
                   <dt className={dataLabelClass}>{column.header}</dt>

@@ -28,28 +28,33 @@ export function FactorBreakdown({
       <SubsectionTitle as={headingLevel} className="mb-3 block">
         Fatores do score
       </SubsectionTitle>
+      {/* The meter is a fixed width beside the label rather than a rule under
+          it: stretched to the card's full width, a 4-row breakdown reads as
+          coloured dividers and the weights stop being comparable at a glance. */}
       <ul className="space-y-2.5">
-        {factors.map((factor) => {
+        {factors.map((factor, index) => {
           const style = directionStyles[factor.direction];
           return (
-            <li key={factor.label} className="space-y-1.5">
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-sm text-text">
-                  <span aria-label={style.label} className="mr-1.5 font-mono text-muted">
-                    {style.sign}
-                  </span>
-                  {factor.label}
+            <li key={factor.label} className="flex items-center gap-3">
+              <span className="min-w-0 flex-1 text-sm text-text">
+                <span aria-label={style.label} className="mr-1.5 font-mono text-muted">
+                  {style.sign}
                 </span>
-                <span className="tabular shrink-0 font-mono text-xs text-muted">
-                  {factor.weight}%
-                </span>
-              </div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-border">
+                {factor.label}
+              </span>
+              <div className="h-1 w-20 shrink-0 overflow-hidden rounded-full bg-border sm:w-40">
+                {/* Each bar grows in turn, so the breakdown is read top-down as
+                    a sequence of contributions rather than as a finished block. */}
                 <div
-                  className={cn('h-full rounded-full', style.bar)}
-                  style={{ width: `${factor.weight}%` }}
+                  className={cn('motion-grow-x h-full rounded-full', style.bar)}
+                  style={
+                    { width: `${factor.weight}%`, '--stagger-index': index } as React.CSSProperties
+                  }
                 />
               </div>
+              <span className="tabular w-9 shrink-0 text-right font-mono text-xs text-muted">
+                {factor.weight}%
+              </span>
             </li>
           );
         })}

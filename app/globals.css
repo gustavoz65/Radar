@@ -6,18 +6,32 @@
 
 :root {
   /*
-   * Elevation — two levels, and `--bg` deliberately plays two roles:
-   *   `--bg`      the page background **and** the recessed well *inside* a card
-   *               (simulator input, signal disclaimer, active mobile menu item).
-   *               A `bg-bg` inside a `bg-surface` is not a bug: it is the step
-   *               down. Do not "fix" it to `bg-surface`.
-   *   `--surface` a card/panel raised above the page.
+   * ELEVATION — four steps, each with one job. The previous system had two, and
+   * `--bg` was documented as playing both "page" and "recessed well inside a
+   * card"; that overload is why a well inside a card was indistinguishable from
+   * the page behind it. `--well` now owns the recess.
+   *   --bg             the page, behind everything
+   *   --surface        a card/panel raised above the page
+   *   --surface-raised a hovered card, a popover, a nested emphasis block
+   *   --well           a recess *inside* a surface (input, disclaimer, active item)
    */
-  --bg: #0a0e14;
+  --bg: #070a0f;
   --surface: #0d1117;
-  --border: #21262d;
-  --text: #e6edf3;
-  --text-muted: #8b949e;
+  --surface-raised: #141b24;
+  --well: #04060a;
+
+  /* Two border weights: the hairline that separates, and the one that frames. */
+  --border: #1b212b;
+  --border-strong: #2b3441;
+
+  /* Four text steps. `--text-dim` is the display-headline gray: a 3rem title in
+     full white shouts; the TRAE-style headline is deliberately quieter than the
+     number it introduces. */
+  --text: #e8eef5;
+  --text-dim: #9aa7b8;
+  --text-muted: #7f8b9a;
+  --text-faint: #59636f;
+
   --positive: #3fb950;
   --negative: #f85149;
   --accent: #58a6ff;
@@ -27,13 +41,42 @@
    * Asset classes — the allocation chart's colours (slice + legend). They name
    * *what the asset is*, never a direction: `--positive`/`--negative` stay
    * reserved for price movement and `--signature-gold` for the confidence score.
-   * That is why equities use a teal rather than a green: a legend green sitting
-   * next to a price-up green would read as the same signal. No chart colour ever
-   * lives as raw hex inside a component.
+   * Equities use a teal rather than a green so a legend green never reads as a
+   * price-up green. Fixed income holds its own literal value instead of
+   * aliasing `--accent`: they used to be the same variable, so retuning the
+   * interaction blue silently repainted the allocation chart.
+   * No chart colour ever lives as raw hex inside a component.
    */
-  --asset-fixed-income: var(--accent);
+  --asset-fixed-income: #3d7dd8;
   --asset-crypto: #a371f7;
   --asset-equity: #2dd4bf;
+
+  /*
+   * TERRAIN — the ambient layer. The product is an instrument reading a field,
+   * so the page sits on a measured grid with a dot-matrix contour over it and a
+   * radar sweep passing across. All three are decoration at alpha low enough to
+   * never compete with a number; they are tokens so a single edit retunes the
+   * whole atmosphere.
+   */
+  --terrain-dot: #223042;
+  --terrain-grid: #10151d;
+  --terrain-sweep: #58a6ff;
+  --terrain-dot-size: 22px;
+  --terrain-grid-size: 88px;
+
+  /*
+   * MOTION — durations climb with how much surface the change covers, easings
+   * are shared so nothing invents its own curve.
+   *   1 state (hover, focus)   2 component (open, filter)
+   *   3 entrance (route, card) 4 data (chart draw, gauge sweep)
+   */
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 420ms;
+  --dur-4: 900ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --stagger-step: 45ms;
 
   /*
    * This app is permanently dark — there is no light/dark toggle, in this phase
@@ -43,49 +86,53 @@
    * primitives never render as light-theme boxes against our dark background.
    * There is intentionally no `.dark` selector in this file.
    *
-   * `--border` and `--accent` are Radar-owned tokens with mandated hex values
-   * (#21262d / #58a6ff, declared above). shadcn's equivalents are deliberately
-   * omitted from this block — do not add them back, and do not reintroduce a
-   * `.dark` class that redefines these two names.
+   * `--border` and `--accent` are Radar-owned tokens with mandated hex values.
+   * shadcn's equivalents are deliberately omitted from this block — do not add
+   * them back, and do not reintroduce a `.dark` class that redefines these two.
    */
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--text);
+  --primary: var(--text);
+  --primary-foreground: var(--bg);
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--text-muted);
+  --accent-foreground: var(--bg);
+  --destructive: var(--negative);
+  --input: var(--well);
+  --ring: var(--accent);
+  --chart-1: var(--asset-fixed-income);
+  --chart-2: var(--asset-crypto);
+  --chart-3: var(--asset-equity);
+  --chart-4: var(--text-muted);
+  --chart-5: var(--border-strong);
+  --radius: 0.5rem;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--bg);
+  --sidebar-accent: var(--surface-raised);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent);
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-well: var(--well);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-text: var(--text);
+  --color-dim: var(--text-dim);
   --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-accent: var(--accent);
@@ -97,6 +144,17 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
+
+  --ease-out-radar: var(--ease-out);
+  --ease-in-out-radar: var(--ease-in-out);
+
+  --animate-rise: rise var(--dur-3) var(--ease-out) both;
+  --animate-fade: fade var(--dur-3) var(--ease-out) both;
+  --animate-scan: scan 1.6s var(--ease-in-out) infinite;
+  --animate-sweep: sweep 24s linear infinite;
+  --animate-shimmer: shimmer 1.8s var(--ease-in-out) infinite;
+  --animate-blip: blip 3.2s var(--ease-in-out) infinite;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -125,13 +183,13 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.5);
+  --radius-4xl: calc(var(--radius) * 3);
 }
 
 html {
@@ -158,5 +216,279 @@ body {
   }
   html {
     @apply font-sans;
+  }
+  /* One focus treatment for the whole app: a gold-free accent ring that clears
+     the element, so it is legible on both a surface and a well. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) * 0.5);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * KEYFRAMES
+ * Every looping animation is ambient (sweep, blip, scan, shimmer); every
+ * one-shot animation is an entrance. The reduced-motion block at the bottom is
+ * the single place that switches all of them off.
+ * ------------------------------------------------------------------------ */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes blip {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--draw-from);
+  }
+  to {
+    stroke-dashoffset: var(--draw-to);
+  }
+}
+
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(
+      calc(var(--terrain-dot-size) * -1),
+      calc(var(--terrain-dot-size) * -1),
+      0
+    );
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * MOTION UTILITIES
+ * `--stagger-index` is set inline by the caller; the delay is derived here so
+ * no component hardcodes a millisecond value.
+ * ------------------------------------------------------------------------ */
+
+.motion-rise {
+  animation: rise var(--dur-3) var(--ease-out) both;
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
+}
+
+.motion-fade {
+  animation: fade var(--dur-3) var(--ease-out) both;
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
+}
+
+/*
+ * A stagger container animates its own children in sequence. Doing it with
+ * nth-child rather than a wrapper element per child keeps grid and flex
+ * parents intact — a wrapper would become the grid item and swallow any
+ * column span the child declared.
+ */
+.stagger > * {
+  animation: rise var(--dur-3) var(--ease-out) both;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: calc(1 * var(--stagger-step));
+}
+.stagger > *:nth-child(3) {
+  animation-delay: calc(2 * var(--stagger-step));
+}
+.stagger > *:nth-child(4) {
+  animation-delay: calc(3 * var(--stagger-step));
+}
+.stagger > *:nth-child(5) {
+  animation-delay: calc(4 * var(--stagger-step));
+}
+.stagger > *:nth-child(6) {
+  animation-delay: calc(5 * var(--stagger-step));
+}
+.stagger > *:nth-child(7) {
+  animation-delay: calc(6 * var(--stagger-step));
+}
+.stagger > *:nth-child(8) {
+  animation-delay: calc(7 * var(--stagger-step));
+}
+/* Past eight the delay would outlast the reader's patience, so everything
+   after lands together. */
+.stagger > *:nth-child(n + 9) {
+  animation-delay: calc(8 * var(--stagger-step));
+}
+
+/* Draws an SVG stroke on mount. The caller sets --draw-from/--draw-to in the
+   same units as its own stroke-dasharray. */
+.motion-draw {
+  animation: draw var(--dur-4) var(--ease-out) both;
+}
+
+.motion-grow-x {
+  transform-origin: left center;
+  animation: grow-x var(--dur-4) var(--ease-out) both;
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
+}
+
+/* ---------------------------------------------------------------------------
+ * TERRAIN LAYERS
+ * Composed entirely from gradients — no image asset, no brand dependency, and
+ * nothing to download. `.terrain-dots` is the contour field, masked into soft
+ * blobs so the matrix dissolves at the edges the way a real reading would.
+ * ------------------------------------------------------------------------ */
+
+.terrain-grid {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      var(--terrain-grid) 0 1px,
+      transparent 1px var(--terrain-grid-size)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      var(--terrain-grid) 0 1px,
+      transparent 1px var(--terrain-grid-size)
+    );
+  mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 90%);
+}
+
+.terrain-dots {
+  background-image: radial-gradient(circle, var(--terrain-dot) 1px, transparent 1.2px);
+  background-size: var(--terrain-dot-size) var(--terrain-dot-size);
+  mask-image:
+    radial-gradient(ellipse 60% 55% at 78% 8%, black 0%, transparent 72%),
+    radial-gradient(ellipse 42% 38% at 92% 34%, black 0%, transparent 68%),
+    radial-gradient(ellipse 34% 30% at 12% 22%, black 0%, transparent 70%),
+    radial-gradient(ellipse 50% 26% at 46% 2%, black 0%, transparent 74%);
+  animation: drift 60s linear infinite;
+}
+
+/* A real sweep has a crisp leading edge and a fading tail, which is why the
+   ramp runs *up* to the cut at 0deg rather than away from it. */
+.terrain-sweep {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 300deg,
+    var(--terrain-sweep) 360deg
+  );
+  animation: sweep 24s linear infinite;
+}
+
+/* ---------------------------------------------------------------------------
+ * INSTRUMENT FRAMING
+ * Corner brackets: two opposite corners get a second, brighter hairline laid
+ * exactly over the card's own border, so a panel that carries a reading (score,
+ * patrimônio) reads as framed rather than merely bordered. Each side declares
+ * its colour explicitly — the `border-top: 1px solid` shorthand would otherwise
+ * reset the colour to `currentColor` and the brackets would render as text.
+ * ------------------------------------------------------------------------ */
+
+.bracketed::before,
+.bracketed::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.bracketed::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--border-strong);
+  border-left: 1px solid var(--border-strong);
+  border-top-left-radius: var(--radius);
+}
+
+.bracketed::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border-strong);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* ---------------------------------------------------------------------------
+ * REDUCED MOTION
+ * The single switch. Ambient loops stop entirely (they are decoration and
+ * nobody misses them); entrances collapse to an instant, final state rather
+ * than being removed, so nothing that animated in stays invisible.
+ * ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .terrain-sweep {
+    display: none;
   }
 }

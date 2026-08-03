@@ -5,8 +5,10 @@ import type { NewsCategory, NewsItem } from '@/lib/types';
 import { EmptyState } from '@/components/common/empty-state';
 import { FilterGroup } from '@/components/common/filter-group';
 import { formatDateTime } from '@/lib/format/date';
-import { PanelTitle } from '@/components/common/typography';
-import { surfaceCardClass } from '@/components/common/surface';
+import { PanelTitle, dataLabelClass } from '@/components/common/typography';
+import { interactiveSurfaceClass, surfaceCardClass } from '@/components/common/surface';
+import { staggerClass } from '@/components/common/motion';
+import { cn } from '@/lib/utils';
 
 type Filter = 'todas' | NewsCategory;
 
@@ -48,20 +50,22 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
           description="Troque o filtro ou volte mais tarde — o feed é atualizado ao longo do dia."
         />
       ) : (
-        <ul className="space-y-3">
+        <ul className={cn('space-y-3', staggerClass)}>
           {visible.map((item) => (
-            <li key={item.id} className={surfaceCardClass}>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                <span className="rounded border border-border px-2 py-0.5 uppercase tracking-wider">
+            <li key={item.id} className={cn(surfaceCardClass, interactiveSurfaceClass)}>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className={cn(dataLabelClass, 'rounded-sm bg-well px-2 py-1 text-text')}>
                   {categoryLabels[item.category]}
                 </span>
-                <span>{item.source}</span>
-                <span aria-hidden>·</span>
-                <time dateTime={item.publishedAt} className="tabular font-mono">
+                <span className="text-xs text-muted">{item.source}</span>
+                <span aria-hidden className="text-faint">
+                  ·
+                </span>
+                <time dateTime={item.publishedAt} className="tabular font-mono text-xs text-faint">
                   {formatDateTime(item.publishedAt)}
                 </time>
               </div>
-              <PanelTitle className="mt-2">{item.title}</PanelTitle>
+              <PanelTitle className="mt-3">{item.title}</PanelTitle>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.summary}</p>
             </li>
           ))}

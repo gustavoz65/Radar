@@ -1,4 +1,10 @@
-import { GAUGE_ARC_LENGTH, GAUGE_PATH, gaugeDashOffset, scoreLabel } from '@/lib/charts/gauge';
+import {
+  GAUGE_ARC_LENGTH,
+  GAUGE_PATH,
+  GAUGE_TICKS,
+  gaugeDashOffset,
+  scoreLabel,
+} from '@/lib/charts/gauge';
 import { cn } from '@/lib/utils';
 
 interface ConfidenceGaugeProps {
@@ -10,6 +16,11 @@ interface ConfidenceGaugeProps {
 /**
  * The signature arc gauge. `--signature-gold` is reserved for this component:
  * confidence is never expressed with the positive/negative price colors.
+ *
+ * The arc draws itself in on mount — the one chart animation that earns its
+ * keep, because watching the arc travel is what makes the number read as a
+ * measurement rather than a badge. `strokeDashoffset` is also set as an
+ * attribute so the final state is correct before any CSS runs.
  */
 export function ConfidenceGauge({ score, size = 'mini', className }: ConfidenceGaugeProps) {
   const rounded = Math.round(score);
@@ -27,6 +38,17 @@ export function ConfidenceGauge({ score, size = 'mini', className }: ConfidenceG
         aria-hidden
         focusable="false"
       >
+        {GAUGE_TICKS.map((tick, index) => (
+          <line
+            key={index}
+            x1={tick.x1}
+            y1={tick.y1}
+            x2={tick.x2}
+            y2={tick.y2}
+            stroke="var(--border-strong)"
+            strokeWidth={1}
+          />
+        ))}
         <path
           d={GAUGE_PATH}
           fill="none"
@@ -35,6 +57,13 @@ export function ConfidenceGauge({ score, size = 'mini', className }: ConfidenceG
           strokeLinecap="round"
         />
         <path
+          className="motion-draw"
+          style={
+            {
+              '--draw-from': GAUGE_ARC_LENGTH,
+              '--draw-to': gaugeDashOffset(score),
+            } as React.CSSProperties
+          }
           d={GAUGE_PATH}
           fill="none"
           stroke="var(--signature-gold)"
@@ -47,13 +76,18 @@ export function ConfidenceGauge({ score, size = 'mini', className }: ConfidenceG
           x="60"
           y="54"
           textAnchor="middle"
-          className="fill-[var(--text)] font-mono"
+          className="motion-fade fill-[var(--text)] font-mono"
           fontSize={large ? 26 : 22}
         >
           {rounded}
         </text>
       </svg>
-      <figcaption className={cn('text-muted', large ? '-mt-1 text-sm' : '-mt-2 text-xs')}>
+      <figcaption
+        className={cn(
+          'font-mono uppercase tracking-[0.14em] text-faint',
+          large ? '-mt-1 text-xs' : '-mt-2 text-[0.625rem]',
+        )}
+      >
         Confiança {scoreLabel(score).toLowerCase()}
       </figcaption>
     </figure>
