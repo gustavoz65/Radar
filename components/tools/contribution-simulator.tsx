@@ -46,7 +46,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
             step={500}
             value={initial}
             onChange={(event) => setInitial(Number(event.target.value) || 0)}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
         <div className="space-y-1.5">
@@ -60,7 +60,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
             step={100}
             value={monthlyContribution}
             onChange={(event) => setMonthlyContribution(Number(event.target.value) || 0)}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
         <div className="space-y-1.5">
@@ -74,7 +74,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
             max={40}
             value={years}
             onChange={(event) => setYears(Math.max(1, Number(event.target.value) || 1))}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
         <div className="space-y-1.5">
@@ -89,7 +89,7 @@ export function ContributionSimulator({ defaultAnnualRate }: { defaultAnnualRate
             step={0.05}
             value={annualRatePercent}
             onChange={(event) => setAnnualRatePercent(Number(event.target.value) || 0)}
-            className="tabular border-border bg-bg font-mono text-text"
+            className="tabular border-border bg-well font-mono text-text"
           />
         </div>
       </div>

@@ -1,12 +1,14 @@
 import { SectionHeader } from '@/components/common/section-header';
 import { StatCard } from '@/components/common/stat-card';
+import { Readout } from '@/components/common/readout';
 import { TrendValue } from '@/components/common/trend-value';
 import { SubsectionTitle } from '@/components/common/typography';
 import { KindFilter } from '@/components/equities/kind-filter';
 import { MarketQuotesTable } from '@/components/market/market-quotes-table';
-import { formatBRL } from '@/lib/format/money';
 import { percentChange } from '@/lib/format/percent';
 import { getEquityMarket, getEquityPositions } from '@/lib/data/services';
+import { staggerClass } from '@/components/common/motion';
+import { cn } from '@/lib/utils';
 
 export default async function AcoesPage() {
   const [positions, market] = await Promise.all([getEquityPositions(), getEquityMarket()]);
@@ -22,17 +24,20 @@ export default async function AcoesPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <SectionHeader
+        eyebrow="Classe de ativo"
         title="Ações e FIIs"
+        highlight="Ações"
         description="Cotações da B3, e a sua posição quando houver."
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Sua posição" value={formatBRL(total)} />
+      <section className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', staggerClass)}>
+        <StatCard label="Sua posição" tone="equity" value={<Readout value={total} />} />
         <StatCard
           label="Resultado acumulado"
-          value={positions.length > 0 ? formatBRL(total - invested) : '—'}
+          tone="equity"
+          value={positions.length > 0 ? <Readout value={total - invested} /> : '—'}
           hint={
             positions.length > 0 ? (
               <TrendValue value={percentChange(invested, total)} format="percent" />
@@ -41,6 +46,7 @@ export default async function AcoesPage() {
         />
         <StatCard
           label="Maior alta do dia"
+          tone="equity"
           value={best?.ticker ?? '—'}
           hint={
             best?.changePercent != null ? (
@@ -48,7 +54,11 @@ export default async function AcoesPage() {
             ) : undefined
           }
         />
-        <StatCard label="Ativos acompanhados" value={String(market.length)} />
+        <StatCard
+          label="Ativos acompanhados"
+          tone="equity"
+          value={<Readout value={market.length} format="integer" />}
+        />
       </section>
 
       <section className="space-y-3">

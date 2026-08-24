@@ -165,8 +165,8 @@ export function PositionForm({
     }
   }
 
-  const inputClass = 'tabular border-border bg-bg font-mono text-text';
-  const textClass = 'border-border bg-bg text-text';
+  const inputClass = 'tabular border-border bg-well font-mono text-text';
+  const textClass = 'border-border bg-well text-text';
   const prefix = isEditing ? `edit-${position!.id}` : 'new';
   const fieldId = (name: string) => `${prefix}-${name}`;
 

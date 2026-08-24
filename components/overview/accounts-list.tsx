@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { formatBRL } from '@/lib/format/money';
 import { formatDateTime } from '@/lib/format/date';
 import { surfaceClass } from '@/components/common/surface';
+import { staggerClass } from '@/components/common/motion';
 import { cn } from '@/lib/utils';
 
 const accountTypeLabels: Record<Account['type'], string> = {
@@ -35,9 +36,12 @@ export function AccountsList({ accounts }: { accounts: Account[] }) {
   }
 
   return (
-    <ul className={cn('divide-y divide-border', surfaceClass)}>
+    <ul className={cn('divide-y divide-border', surfaceClass, staggerClass)}>
       {accounts.map((account) => (
-        <li key={account.id} className="flex items-center gap-3 px-4 py-3">
+        <li
+          className="flex items-center gap-3 px-4 py-3 transition-colors duration-(--dur-1) hover:bg-surface-raised"
+          key={account.id}
+        >
           <InstitutionBadge institution={account.institution} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-text">{account.institution.name}</p>
@@ -45,7 +49,7 @@ export function AccountsList({ accounts }: { accounts: Account[] }) {
               {accountTypeLabels[account.type]} · atualizado {formatDateTime(account.lastUpdated)}
             </p>
           </div>
-          <span className="tabular shrink-0 font-mono text-sm text-text">
+          <span className="tabular shrink-0 font-mono text-sm tracking-[-0.01em] text-text">
             {formatBRL(account.balance)}
           </span>
         </li>
@@ -62,9 +66,12 @@ export function AccountsList({ accounts }: { accounts: Account[] }) {
  */
 export function CreditCardsList({ accounts }: { accounts: Account[] }) {
   return (
-    <ul className={cn('divide-y divide-border', surfaceClass)}>
+    <ul className={cn('divide-y divide-border', surfaceClass, staggerClass)}>
       {accounts.map((account) => (
-        <li key={account.id} className="flex items-center gap-3 px-4 py-3">
+        <li
+          className="flex items-center gap-3 px-4 py-3 transition-colors duration-(--dur-1) hover:bg-surface-raised"
+          key={account.id}
+        >
           <InstitutionBadge institution={account.institution} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-text">{account.institution.name}</p>

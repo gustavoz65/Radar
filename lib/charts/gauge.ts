@@ -18,3 +18,29 @@ export function scoreLabel(score: number): 'Baixa' | 'Moderada' | 'Alta' {
   if (value < 70) return 'Moderada';
   return 'Alta';
 }
+
+export interface GaugeTick {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/**
+ * Scale marks every 10 points, drawn *inside* the arc: outside, the marks at 0
+ * and 100 would leave the 120x70 viewBox. Every fifth is longer, so the reader
+ * can find the halfway point without counting.
+ */
+export const GAUGE_TICKS: GaugeTick[] = Array.from({ length: 11 }, (_, step) => {
+  const radians = Math.PI - (step / 10) * Math.PI;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const inner = step % 5 === 0 ? 37 : 40;
+
+  return {
+    x1: 60 + cos * inner,
+    y1: 60 - sin * inner,
+    x2: 60 + cos * 44,
+    y2: 60 - sin * 44,
+  };
+});

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { DataTable, type Column } from '@/components/common/data-table';
 import { PositionForm } from '@/components/positions/position-form';
 import { formatBRL } from '@/lib/format/money';
+import { dangerActionClass, secondaryActionClass } from '@/components/common/action';
+import { cn } from '@/lib/utils';
 import type { AssetClass, Position } from '@/lib/types';
 
 const assetClassLabels: Record<AssetClass, string> = {
@@ -88,13 +90,15 @@ export function PositionsTable({ positions }: { positions: Position[] }) {
         // A caixinha is owned by the sync: the next run would overwrite any edit
         // and re-create any deletion, so offering the buttons would be a lie.
         position.source === 'pierre' ? (
-          <span className="text-xs text-muted">Sincronizado</span>
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-faint">
+            Sincronizado
+          </span>
         ) : (
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setEditing(position)}
-              className="rounded-md border border-border px-2.5 py-1 text-xs text-text"
+              className={cn(secondaryActionClass, 'px-2.5 py-1 text-xs')}
             >
               Editar
             </button>
@@ -102,7 +106,7 @@ export function PositionsTable({ positions }: { positions: Position[] }) {
               type="button"
               onClick={() => handleDelete(position)}
               disabled={deletingId === position.id}
-              className="rounded-md border border-border px-2.5 py-1 text-xs text-negative disabled:opacity-60"
+              className={cn(dangerActionClass, 'px-2.5 py-1 text-xs')}
             >
               {deletingId === position.id ? 'Excluindo…' : 'Excluir'}
             </button>

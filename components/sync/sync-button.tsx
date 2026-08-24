@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { primaryActionClass } from '@/components/common/action';
+import { cn } from '@/lib/utils';
 
 export function SyncButton() {
   const router = useRouter();
@@ -38,9 +40,16 @@ export function SyncButton() {
         onClick={handleSync}
         disabled={pending}
         aria-busy={pending}
-        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg disabled:opacity-60"
+        className={cn(primaryActionClass, 'relative overflow-hidden')}
       >
         {pending ? 'Sincronizando…' : 'Atualizar agora'}
+        {/* A sync hits several external APIs in sequence and has no progress to
+            report, so the button scans rather than pretending to fill. */}
+        {pending ? (
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
+            <span className="animate-scan block h-full w-1/4 bg-bg/60" />
+          </span>
+        ) : null}
       </button>
       {error ? (
         <p role="alert" className="max-w-xs text-xs text-negative">

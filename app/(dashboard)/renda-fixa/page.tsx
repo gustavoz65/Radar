@@ -1,23 +1,25 @@
 import { BarComparisonChart, type ComparisonBar } from '@/components/charts/bar-comparison-chart';
 import { SectionHeader } from '@/components/common/section-header';
 import { StatCard } from '@/components/common/stat-card';
+import { Readout } from '@/components/common/readout';
 import { TrendValue } from '@/components/common/trend-value';
 import { EmptyState } from '@/components/common/empty-state';
 import { FixedIncomeTable } from '@/components/fixed-income/fixed-income-table';
-import { formatBRL } from '@/lib/format/money';
 import { formatPercent, percentChange } from '@/lib/format/percent';
 import { formatDateTime } from '@/lib/format/date';
 import { getFixedIncomePositions, getMarketRates } from '@/lib/data/services';
 import { SubsectionTitle } from '@/components/common/typography';
 import { surfaceCardClass } from '@/components/common/surface';
+import { staggerClass } from '@/components/common/motion';
+import { cn } from '@/lib/utils';
 
 export default async function RendaFixaPage() {
   const [positions, rates] = await Promise.all([getFixedIncomePositions(), getMarketRates()]);
 
   if (positions.length === 0) {
     return (
-      <div className="space-y-8">
-        <SectionHeader title="Renda fixa" />
+      <div className="space-y-10">
+        <SectionHeader eyebrow="Classe de ativo" title="Renda fixa" highlight="fixa" />
         <EmptyState
           title="Nenhum título de renda fixa por aqui ainda"
           description="Assim que uma aplicação aparecer nas contas conectadas, ela entra nesta lista com a comparação frente ao CDI."
@@ -70,9 +72,11 @@ export default async function RendaFixaPage() {
   ].sort((a, b) => b.value - a.value);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <SectionHeader
+        eyebrow="Classe de ativo"
         title="Renda fixa"
+        highlight="fixa"
         description={
           rates
             ? `Selic ${formatPercent(rates.selic)} a.a. (meta do Copom) e CDI ${formatPercent(rates.cdi)} a.a. (acumulado 12 meses), do Banco Central em ${formatDateTime(rates.updatedAt)}.`
@@ -80,11 +84,16 @@ export default async function RendaFixaPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total em renda fixa" value={formatBRL(total)} />
+      <section className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', staggerClass)}>
+        <StatCard
+          label="Total em renda fixa"
+          tone="fixed-income"
+          value={<Readout value={total} />}
+        />
         <StatCard
           label="Rentabilidade acumulada"
-          value={hasCostBasis ? formatBRL(currentKnown - investedKnown) : '—'}
+          tone="fixed-income"
+          value={hasCostBasis ? <Readout value={currentKnown - investedKnown} /> : '—'}
           hint={
             hasCostBasis ? (
               <TrendValue value={percentChange(investedKnown, currentKnown)} format="percent" />
@@ -95,14 +104,27 @@ export default async function RendaFixaPage() {
         />
         <StatCard
           label="Taxa média ponderada"
-          value={weightedRate === null ? '—' : `${formatPercent(weightedRate)} a.a.`}
+          tone="fixed-income"
+          value={
+            weightedRate === null ? (
+              '—'
+            ) : (
+              <>
+                <Readout value={weightedRate} format="percent" /> a.a.
+              </>
+            )
+          }
           hint={
             weightedRate === null ? (
               <span className="text-muted">Taxa equivalente ainda não calculada</span>
             ) : undefined
           }
         />
-        <StatCard label="Títulos" value={String(positions.length)} />
+        <StatCard
+          label="Títulos"
+          tone="fixed-income"
+          value={<Readout value={positions.length} format="integer" />}
+        />
       </section>
 
       <section className="space-y-3">
@@ -111,7 +133,7 @@ export default async function RendaFixaPage() {
       </section>
 
       <section className={surfaceCardClass}>
-        <SubsectionTitle className="mb-4 block">
+        <SubsectionTitle className="mb-5 block">
           Taxa equivalente a.a. vs. indicadores
         </SubsectionTitle>
         <BarComparisonChart data={comparison} height={340} />
